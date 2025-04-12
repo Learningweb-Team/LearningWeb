@@ -1,0 +1,9 @@
+# Ignore dependencies
+node_modules/
+
+# Optional: other ignores
+.env
+dist/
+build/
+.DS_Store
+*.log

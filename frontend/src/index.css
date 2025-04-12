@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.nav-link {
+    @apply px-4 py-2 rounded-lg transition-all duration-300 hover:bg-black hover:text-white;
+  }
+  
