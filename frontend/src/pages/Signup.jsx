@@ -66,7 +66,6 @@ const Signup = () => {
         phoneNumber: formData.phoneNumber,
         password: formData.password,
         image: imageUrl || "",
-        
       };
 
       const res = await axios.post("http://localhost:5000/api/auth/signup", userData);
@@ -113,7 +112,7 @@ const Signup = () => {
                 type="text"
                 name="firstName"
                 className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
-                placeholder="John"
+                placeholder="first name"
                 value={formData.firstName}
                 onChange={handleChange}
                 required
@@ -125,7 +124,7 @@ const Signup = () => {
                 type="text"
                 name="lastName"
                 className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
-                placeholder="Doe"
+                placeholder="last name"
                 value={formData.lastName}
                 onChange={handleChange}
                 required
@@ -139,7 +138,7 @@ const Signup = () => {
               type="email"
               name="email"
               className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
-              placeholder="your@email.com"
+              placeholder="@email.com"
               value={formData.email}
               onChange={handleChange}
               required
@@ -152,7 +151,7 @@ const Signup = () => {
               type="tel"
               name="phoneNumber"
               className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
-              placeholder="e.g. +91 9876543210"
+              placeholder="+91 9876543210"
               value={formData.phoneNumber}
               onChange={handleChange}
               required
@@ -181,17 +180,17 @@ const Signup = () => {
           </div>
 
           <div>
-            <label className="block text-white text-sm mb-1">Profile Image</label>
+            <label className="block text-white text-sm mb-1">My Profile</label>
             <div className="flex items-center space-x-4">
-              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-700">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-700 group">
                 {formData.image ? (
                   <img 
                     src={formData.image} 
                     alt="Profile preview" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:bg-opacity-50 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                       <path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
                       <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
@@ -201,7 +200,7 @@ const Signup = () => {
                 )}
               </div>
               <label className="flex-1">
-                <span className="block w-full p-2 text-center text-sm text-white border border-white border-opacity-30 rounded hover:bg-white hover:bg-opacity-10 transition cursor-pointer">
+                <span className="block w-full p-2 text-center text-sm text-white border border-white border-opacity-30 rounded hover:bg-black hover:bg-opacity-50 transition cursor-pointer">
                   {selectedImage ? "Change Image" : "Upload Image"}
                 </span>
                 <input

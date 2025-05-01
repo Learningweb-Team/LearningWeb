@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const AdminDashboard = () => {
   const [admin, setAdmin] = useState(null);
-  const [error, setError] = useState(""); // Track errors
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,7 +23,7 @@ const AdminDashboard = () => {
         });
 
         const data = await response.json();
-        console.log("🔍 API Response:", data); // Debugging
+        console.log("🔍 API Response:", data);
 
         if (!response.ok || !data.admin) {
           throw new Error(data.message || "Failed to fetch admin details");
@@ -48,12 +49,63 @@ const AdminDashboard = () => {
   if (!admin) return <p className="text-center mt-6">Loading admin details...</p>;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-center mb-4">Admin Profile</h1>
-      <div className="border p-4 rounded-md max-w-md mx-auto">
-        <p><strong>Name:</strong> {admin.name}</p>
-        <p><strong>Email:</strong> {admin.email}</p>
-        <p><strong>Role:</strong> {admin.role}</p>
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-800 text-white p-4">
+        <h1 className="text-2xl font-bold mb-8">The Digital School</h1>
+        
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-2">MY DASHBOARD</h2>
+          <ul className="space-y-2">
+            <li><Link to="/dashboard/courses" className="block hover:bg-gray-700 p-2 rounded">Courses</Link></li>
+            <li><Link to="/dashboard/students" className="block hover:bg-gray-700 p-2 rounded">Students</Link></li>
+            <li><Link to="/dashboard/analytics" className="block hover:bg-gray-700 p-2 rounded">Analytics</Link></li>
+            <li><Link to="/dashboard/messages" className="block hover:bg-gray-700 p-2 rounded">Messages</Link></li>
+          </ul>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-2">COURSE MANAGEMENT</h2>
+          <ul className="space-y-2">
+            <li><Link to="/dashboard/courses/all" className="block hover:bg-gray-700 p-2 rounded">All Courses</Link></li>
+            <li><Link to="/dashboard/schedule" className="block hover:bg-gray-700 p-2 rounded">Schedule</Link></li>
+          </ul>
+        </div>
+
+        <div>
+          <Link 
+            to="/login" 
+            onClick={() => localStorage.removeItem("token")}
+            className="block hover:bg-gray-700 p-2 rounded"
+          >
+            Logout
+          </Link>
+        </div>
+      </div>
+
+      {/* Main Content - Focused on Profile */}
+      <div className="flex-1 p-8 bg-gray-100">
+        <h1 className="text-3xl font-bold mb-6">Digital Marketing Masterclass</h1>
+        <p className="mb-8">Create different lessons under sections for your digital marketing course</p>
+        
+        {/* Profile Section - Simplified to match screenshot */}
+        <div className="bg-white p-6 rounded-lg shadow-md max-w-2xl">
+          <h2 className="text-xl font-bold mb-6">My Profile</h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Name</h3>
+              <p className="mt-1 text-lg">{admin.name}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Email</h3>
+              <p className="mt-1 text-lg">{admin.email}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Role</h3>
+              <p className="mt-1 text-lg">{admin.role}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
