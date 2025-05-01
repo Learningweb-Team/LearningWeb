@@ -44,14 +44,24 @@ const Navbar = () => {
     if (token) {
       const fetchUserData = async () => {
         try {
-          const emailFromStorage = localStorage.getItem("email");
-
-          setUserData({
-            name: "Profile",
-            email: emailFromStorage || "user@example.com",
-            avatar: null,
-            coursesEnrolled: 5,
+          const endpoint = role === "admin" 
+            ? "http://localhost:5000/api/dashboard/admin/profile"
+            : "http://localhost:5000/api/dashboard/user-dashboard";
+          
+          const response = await fetch(endpoint, {
+            headers: { Authorization: `Bearer ${token}` },
           });
+          const data = await response.json();
+          
+          if (data.user || data.admin) {
+            const user = data.user || data.admin;
+            setUserData({
+              name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin',
+              email: user.email,
+              avatar: user.image || null,
+              coursesEnrolled: user.courses?.length || 0,
+            });
+          }
         } catch (error) {
           console.error("Failed to fetch user data:", error);
         }
@@ -59,7 +69,7 @@ const Navbar = () => {
 
       fetchUserData();
     }
-  }, [token]);
+  }, [token, role]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -70,7 +80,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 w-full ${isScrolled ? "bg-blue-600/100 " : "bg-blue-600/100 "} transition-all duration-300 border-b border-blue-300/30 p-4 text-white font-[Poppins] z-50`}>
+    <nav className={`fixed top-0 left-0 w-full ${isScrolled ? "bg-blue-600/100" : "bg-blue-600/100"} transition-all duration-300 border-b border-blue-300/30 p-4 text-white font-[Poppins] z-50`}>
       <div className="container mx-auto flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-1 pl-1">
           <img src={logo} alt="Logo" className="w-15 h-14 object-contain" />
@@ -93,25 +103,25 @@ const Navbar = () => {
                     <User size={18} />
                   )}
                 </div>
-                <span className="font-medium">{userData?.name || "Profile"}</span>
+                <span className="font-medium">{userData?.name || "Admin"}</span>
                 <ChevronDown size={16} className={`transition-transform ${showProfileDropdown ? "rotate-180" : ""}`} />
               </button>
 
               {showProfileDropdown && (
                 <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden z-50 border border-gray-200 dark:border-gray-700">
                   <div className="px-4 py-3 bg-blue-500 text-white">
-                    <p className="text-sm font-medium">{userData?.name || "Profile"}</p>
-                    <p className="text-xs truncate">{userData?.email || "user@example.com"}</p>
+                    <p className="text-sm font-medium">{userData?.name || "Admin"}</p>
+                    <p className="text-xs truncate">{userData?.email || "admin@example.com"}</p>
                   </div>
 
                   <div className="py-1">
                     <Link
-                      to="/profile"
+                      to={role === "admin" ? "/admin-profile" : "/user-dashboard"}
                       className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       onClick={() => setShowProfileDropdown(false)}
                     >
                       <User size={16} className="mr-2" />
-                      My Profile
+                      My Dashboard
                     </Link>
                     <Link
                       to="/my-courses"
@@ -129,16 +139,7 @@ const Navbar = () => {
                       <Settings size={16} className="mr-2" />
                       Settings
                     </Link>
-                    {role === "admin" && (
-                      <Link
-                        to="/admin"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setShowProfileDropdown(false)}
-                      >
-                        <Settings size={16} className="mr-2" />
-                        Admin Dashboard
-                      </Link>
-                    )}
+                    
                     <div className="border-t border-gray-200 dark:border-gray-700"></div>
                     <button
                       onClick={handleLogout}
@@ -192,17 +193,17 @@ const Navbar = () => {
                   )}
                 </div>
                 <div>
-                  <p className="font-medium">{userData?.name || "Profile"}</p>
-                  <p className="text-sm text-blue-200">{userData?.email || "user@example.com"}</p>
+                  <p className="font-medium">{userData?.name || "Admin"}</p>
+                  <p className="text-sm text-blue-200">{userData?.email || "admin@example.com"}</p>
                 </div>
               </div>
 
               <Link
-                to="/profile"
+                to={role === "admin" ? "/admin-profile" : "/user-dashboard"}
                 className="block py-2 px-2 rounded bg-black/30 hover:bg-blue-700/70 transition-colors mb-2"
                 onClick={() => setIsOpen(false)}
               >
-                My Profile
+                My Dashboard
               </Link>
               <Link
                 to="/my-courses"
@@ -218,15 +219,7 @@ const Navbar = () => {
               >
                 Settings
               </Link>
-              {role === "admin" && (
-                <Link
-                  to="/admin"
-                  className="block py-2 px-2 rounded bg-black/30 hover:bg-blue-700/70 transition-colors mb-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Admin Dashboard
-                </Link>
-              )}
+              
               <button
                 onClick={handleLogout}
                 className="w-full text-left py-2 px-2 rounded bg-black/30 text-red-300 hover:bg-blue-700/70 transition-colors mt-2"
@@ -271,7 +264,7 @@ const NavLinks = ({ onClick, token, role }) => (
     </Link>
     {token && role === "admin" && (
       <Link to="/admin" className="font-bold hover:text-blue-200 transition-colors" onClick={onClick}>
-        Admin Dashboard
+        Admin Courses
       </Link>
     )}
   </div>

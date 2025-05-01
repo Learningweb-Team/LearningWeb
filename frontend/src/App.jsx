@@ -5,10 +5,11 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/AdminProfile";
 import UserDashboard from "./pages/UserDashboard";
 import Courses from "./pages/Courses";
 import Admin from "./components/admin"; // Updated import path
+import AdminProfile from "./pages/AdminProfile";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const token = localStorage.getItem("token");
@@ -41,6 +42,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/courses" element={<Courses />} />
+          
+       
+
 
           {/* User Routes */}
           <Route
@@ -64,10 +68,10 @@ function App() {
           
           {/* Admin Dashboard (if separate from main admin interface) */}
           <Route
-            path="/admin-dashboard"
+            path="/admin-profile"
             element={
               <ProtectedRoute allowedRoles="admin">
-                <AdminDashboard />
+                <AdminProfile />
               </ProtectedRoute>
             }
           />

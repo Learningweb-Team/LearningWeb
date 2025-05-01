@@ -120,7 +120,7 @@ const ModuleSection = ({
               accept="image/*" 
               className="hidden" 
               onChange={handleCoverPhotoUpload} 
-            />
+            /> 
           </label>
         )}
       </div>

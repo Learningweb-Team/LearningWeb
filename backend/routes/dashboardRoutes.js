@@ -30,14 +30,16 @@ router.get("/user-dashboard", authMiddleware, async (req, res) => {
 
     res.status(200).json({
       user: {
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        phoneNumber : user.phone || "Not Provided",
+        phoneNumber: user.phoneNumber,
         role: user.role,
         image: user.image || null,
         courses: user.courses || [],
       },
     });
+    
   } catch (error) {
     console.error("❌ User Dashboard Error:", error.message);
     res.status(500).json({ message: "Internal Server Error" });

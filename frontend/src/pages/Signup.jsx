@@ -3,72 +3,65 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import bgImage from "/src/assets/bg_img/Bglogin1.jpg";
+import PhoneNumberInput from "../components/common/PhoneNumberInput";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    phoneNumber: "", // Changed to match backend
+    phoneNumber: "",
     password: "",
-    image: ""
+    confirmPassword: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      const previewUrl = URL.createObjectURL(file);
-      setFormData(prev => ({ ...prev, image: previewUrl }));
-    }
-  };
-
-  const uploadImage = async (file) => {
-    // In a real app, implement actual image upload logic here
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve("https://example.com/user-uploaded-image.jpg");
-      }, 1000);
-    });
+  const handlePhoneNumberChange = (fullPhoneNumber) => {
+    setFormData((prev) => ({
+      ...prev,
+      phoneNumber: fullPhoneNumber,
+    }));
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      let imageUrl = "";
-      if (selectedImage) {
-        imageUrl = await uploadImage(selectedImage);
-      }
-
       const userData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         password: formData.password,
-        image: imageUrl || "",
       };
 
-      const res = await axios.post("http://localhost:5000/api/auth/signup", userData);
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/signup",
+        userData
+      );
 
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
@@ -82,8 +75,10 @@ const Signup = () => {
         setError(res.data.message || "Signup failed. Try again.");
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 
-                         (error.response?.data?.error?.message || "Signup failed. Please try again.");
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error?.message ||
+        "Signup failed. Please try again.";
       setError(errorMessage);
       console.error("Signup Error:", error.response?.data || error.message);
     } finally {
@@ -92,7 +87,7 @@ const Signup = () => {
   };
 
   return (
-    <div 
+    <div
       className="flex items-center justify-center min-h-screen bg-cover bg-center relative px-4 py-8"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
@@ -145,18 +140,11 @@ const Signup = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-white text-sm mb-1">Phone Number*</label>
-            <input
-              type="tel"
-              name="phoneNumber"
-              className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
-              placeholder="+91 9876543210"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          <PhoneNumberInput
+            value={formData.phoneNumber}
+            onChange={handlePhoneNumberChange}
+            defaultCountry="IN"
+          />
 
           <div className="relative">
             <label className="block text-white text-sm mb-1">Password*</label>
@@ -179,59 +167,66 @@ const Signup = () => {
             </button>
           </div>
 
-          <div>
-            <label className="block text-white text-sm mb-1">My Profile</label>
-            <div className="flex items-center space-x-4">
-              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-700 group">
-                {formData.image ? (
-                  <img 
-                    src={formData.image} 
-                    alt="Profile preview" 
-                    className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:bg-opacity-50 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                      <path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <label className="flex-1">
-                <span className="block w-full p-2 text-center text-sm text-white border border-white border-opacity-30 rounded hover:bg-black hover:bg-opacity-50 transition cursor-pointer">
-                  {selectedImage ? "Change Image" : "Upload Image"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-              </label>
-            </div>
+          <div className="relative">
+            <label className="block text-white text-sm mb-1">Confirm Password*</label>
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
+              placeholder="••••••••"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-9 text-white"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+            </button>
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition duration-300 flex items-center justify-center"
             disabled={isLoading}
           >
             {isLoading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
                 Creating Account...
               </>
-            ) : "Sign Up"}
+            ) : (
+              "Sign Up"
+            )}
           </button>
 
           <div className="flex justify-center text-sm mt-4 text-white">
             Already have an account?{" "}
-            <Link to="/login" className="text-blue-200 hover:text-blue-100 ml-1 font-medium">
+            <Link
+              to="/login"
+              className="text-blue-200 hover:text-blue-100 ml-1 font-medium"
+            >
               Log in
             </Link>
           </div>
