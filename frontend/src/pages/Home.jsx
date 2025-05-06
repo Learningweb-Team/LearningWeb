@@ -9,10 +9,7 @@ import feature2 from "../assets/features/feature2.jpg";
 import feature3 from "../assets/features/feature3.jpg";
 
 const Home = () => {
-  // Background images for hero section
   const images = [bg1, bg2, bg3, bg4];
-
-  // Hero section content
   const content = [
     {
       heading: ["Master", "Digital Marketing"],
@@ -32,31 +29,19 @@ const Home = () => {
     },
   ];
 
-  // Gradient text effect
   const tricolorRGB = "linear-gradient(90deg, rgb(8, 71, 196), rgb(9, 242, 191), rgb(47, 209, 11))";
-
-  // Navigation hook
   const navigate = useNavigate();
-
-  // State for image slider
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fade, setFade] = useState(true);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const featuresRef = useRef(null);
   const coursesRef = useRef(null);
 
-  // Handle course button clicks
   const handleCourseClick = (e, path) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
-    if (token) {
-      navigate(path);
-    } else {
-      navigate("/login", { state: { from: path } });
-    }
+    navigate(token ? path : "/login", { state: { from: path } });
   };
 
-  // Auto-slide effect
   useEffect(() => {
     const interval = setInterval(() => {
       setFade(false);
@@ -68,59 +53,70 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll progress and animation triggers
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const heroHeight = window.innerHeight;
-      setScrollProgress(Math.min(scrollY / heroHeight, 1));
-
-      // Trigger animations when elements come into view
-      if (featuresRef.current) {
-        const featuresTop = featuresRef.current.getBoundingClientRect().top;
-        if (featuresTop < window.innerHeight * 0.75) {
-          featuresRef.current.classList.add('animate-features');
-        }
-      }
-
-      if (coursesRef.current) {
-        const coursesTop = coursesRef.current.getBoundingClientRect().top;
-        if (coursesTop < window.innerHeight * 0.75) {
-          coursesRef.current.classList.add('animate-courses');
-        }
-      }
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: "0px 0px -100px 0px"
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const featuresObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-features');
+        }
+      });
+    }, observerOptions);
+
+    const coursesObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-courses');
+        }
+      });
+    }, observerOptions);
+
+    if (featuresRef.current) {
+      featuresObserver.observe(featuresRef.current);
+    }
+
+    if (coursesRef.current) {
+      coursesObserver.observe(coursesRef.current);
+    }
+
+    return () => {
+      if (featuresRef.current) {
+        featuresObserver.unobserve(featuresRef.current);
+      }
+      if (coursesRef.current) {
+        coursesObserver.unobserve(coursesRef.current);
+      }
+    };
   }, []);
 
-  // Features data
   const features = [
     {
       title: "Expert Instructors",
-      description: "Our digital marketing e-learning platform features expert instructors with extensive industry experience in YouTube ads, social media marketing, LinkedIn mastery, and more. They bring real-world insights, practical strategies, and personalized guidance to help learners master the latest trends and tools, ensuring success in the fast-paced digital landscape.",
+      description: "Our digital marketing e-learning platform features expert instructors with extensive industry experience in YouTube ads, social media marketing, LinkedIn mastery, and more.",
       color: "text-green-600",
       image: feature1,
       bgColor: "from-green-100 to-white"
     },
     {
       title: "Flexible Learning",
-      description: "Our learning platform offers flexible learning designed to fit your schedule and lifestyle. With 24/7 access to courses, you can learn at your own pace, whether you're balancing work, studies, or personal commitments. The self-paced modules, downloadable resources, and on-demand video lessons allow you to study anytime, anywhere.",
+      description: "Our learning platform offers flexible learning designed to fit your schedule and lifestyle. With 24/7 access to courses, you can learn at your own pace.",
       color: "text-cyan-600",
       image: feature2,
       bgColor: "from-cyan-100 to-white"
     },
     {
       title: "Certification",
-      description: "Earn a recognized certification upon completing our digital marketing courses, validating your skills in YouTube ads, social media marketing, and more. This industry-aligned credential enhances your resume, boosts your career prospects, and demonstrates your expertise in the competitive digital marketing landscape.",
+      description: "Earn a recognized certification upon completing our digital marketing courses, validating your skills in YouTube ads, social media marketing, and more.",
       color: "text-orange-600",
       image: feature3,
       bgColor: "from-orange-100 to-white"
     }
   ];
 
-  // Popular courses data
   const courses = [
     {
       title: "LinkedIn Master",
@@ -169,7 +165,7 @@ const Home = () => {
         </div>
 
         <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white text-center px-6">
-          <div className="transition-opacity duration-1000" style={{ opacity: fade ? 1 : 0 }}>
+          <div className="transition-opacity duration-700" style={{ opacity: fade ? 1 : 0 }}>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold space-x-2 mb-6">
               <span
                 style={{
@@ -182,7 +178,7 @@ const Home = () => {
               >
                 {content[currentIndex].heading[0]}
               </span>{" "}
-              <span className="text-white">{content[currentIndex].heading.slice(1).join(" ")}</span>
+              <span className="text-white">{content[currentIndex].heading[1]}</span>
             </h1>
             <p className="mt-4 text-lg lg:text-xl italic max-w-3xl mx-auto">
               {content[currentIndex].subheading}
@@ -191,12 +187,11 @@ const Home = () => {
 
           <button
             onClick={(e) => handleCourseClick(e, "/courses")}
-            className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg"
+            className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg rounded-full transition-colors duration-300 transform hover:scale-105 shadow-lg"
           >
             Start Learning
           </button>
 
-          {/* Scroll indicator */}
           <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2">
             <div className="relative w-6 h-10 border-2 border-white rounded-full">
               <div 
@@ -218,7 +213,7 @@ const Home = () => {
           >
             <div className="max-w-7xl mx-auto">
               {index === 0 && (
-                <div className="text-center mb-12 opacity-0 translate-y-10 transition-all duration-700 ease-out [.animate-features_&]:opacity-100 [.animate-features_&]:translate-y-0">
+                <div className="text-center mb-12 animate-features opacity-0 translate-y-10">
                   <h2 className="text-3xl md:text-4xl font-bold text-blue-600 mb-4">
                     Why Choose Us?
                   </h2>
@@ -232,21 +227,21 @@ const Home = () => {
                 className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-8 md:gap-12`}
               >
                 <div className="md:w-1/2 p-4">
-                  <h3 className={`text-2xl md:text-3xl font-semibold ${feature.color} mb-4 opacity-0 ${
+                  <h3 className={`text-2xl md:text-3xl font-semibold ${feature.color} mb-4 animate-features opacity-0 ${
                     index % 2 === 0 ? '-translate-x-10' : 'translate-x-10'
-                  } transition-all duration-700 ease-out [.animate-features_&]:opacity-100 [.animate-features_&]:translate-x-0`}>
+                  }`}>
                     {feature.title}
                   </h3>
-                  <p className={`text-gray-600 leading-relaxed opacity-0 ${
+                  <p className={`text-gray-600 leading-relaxed animate-features opacity-0 ${
                     index % 2 === 0 ? '-translate-x-10' : 'translate-x-10'
-                  } transition-all duration-700 ease-out delay-100 [.animate-features_&]:opacity-100 [.animate-features_&]:translate-x-0`}>
+                  }`} style={{ animationDelay: '100ms' }}>
                     {feature.description}
                   </p>
                   <button
                     onClick={(e) => handleCourseClick(e, "/about")}
-                    className={`mt-6 px-6 py-2 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 transition-all duration-300 inline-block opacity-0 ${
+                    className={`mt-6 px-6 py-2 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 transition-colors duration-300 inline-block animate-features opacity-0 ${
                       index % 2 === 0 ? '-translate-x-10' : 'translate-x-10'
-                    } transition-all duration-700 ease-out delay-200 [.animate-features_&]:opacity-100 [.animate-features_&]:translate-x-0`}
+                    }`} style={{ animationDelay: '200ms' }}
                   >
                     Learn More
                   </button>
@@ -255,9 +250,9 @@ const Home = () => {
                   <img 
                     src={feature.image} 
                     alt={feature.title}
-                    className={`rounded-xl shadow-lg w-full h-auto max-h-96 object-cover transition-all duration-500 hover:scale-105 opacity-0 ${
+                    className={`rounded-xl shadow-lg w-full h-auto max-h-96 object-cover hover:scale-105 transition-transform duration-300 animate-features opacity-0 ${
                       index % 2 === 0 ? 'translate-x-10' : '-translate-x-10'
-                    } transition-all duration-700 ease-out delay-100 [.animate-features_&]:opacity-100 [.animate-features_&]:translate-x-0`}
+                    }`} style={{ animationDelay: '100ms' }}
                   />
                 </div>
               </div>
@@ -266,14 +261,13 @@ const Home = () => {
         ))}
       </div>
 
-      {/* Popular Courses Section */}
+      {/* Courses Section */}
       <section 
         ref={coursesRef}
-        className="py-16 px-4 sm:px-6 lg:px-8"
-        style={{ backgroundColor: "rgba(220, 240, 255, 0.8)" }}
+        className="py-16 px-4 sm:px-6 lg:px-8 bg-[rgba(220,240,255,0.8)]"
       >
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 opacity-0 translate-y-10 transition-all duration-700 ease-out [.animate-courses_&]:opacity-100 [.animate-courses_&]:translate-y-0">
+          <div className="text-center mb-12 animate-courses opacity-0 translate-y-10">
             <h2 className="text-3xl md:text-4xl font-bold text-blue-600 mb-4">
               Popular Courses
             </h2>
@@ -286,7 +280,7 @@ const Home = () => {
             {courses.map((course, index) => (
               <div 
                 key={index}
-                className={`bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 opacity-0 translate-y-10 transition-all duration-700 ease-out [.animate-courses_&]:opacity-100 [.animate-courses_&]:translate-y-0`}
+                className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 animate-courses opacity-0 translate-y-10"
                 style={{ transitionDelay: `${index * 100}ms` }}
               >
                 <div className={`text-2xl font-semibold ${course.color} mb-4`}>
@@ -297,7 +291,7 @@ const Home = () => {
                 </p>
                 <button
                   onClick={(e) => handleCourseClick(e, course.path)}
-                  className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300 block text-center transform hover:scale-105"
+                  className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-300 block text-center hover:scale-105 transform"
                 >
                   Enroll Now
                 </button>
@@ -305,10 +299,10 @@ const Home = () => {
             ))}
           </div>
           
-          <div className="text-center mt-12 opacity-0 translate-y-10 transition-all duration-700 ease-out delay-300 [.animate-courses_&]:opacity-100 [.animate-courses_&]:translate-y-0">
+          <div className="text-center mt-12 animate-courses opacity-0 translate-y-10" style={{ animationDelay: '300ms' }}>
             <button
               onClick={(e) => handleCourseClick(e, "/categories")}
-              className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 font-semibold rounded-full hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-md inline-block transform hover:scale-105"
+              className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 font-semibold rounded-full hover:bg-blue-600 hover:text-white transition-colors duration-300 shadow-md hover:scale-105 transform"
             >
               View All Courses
             </button>
@@ -317,13 +311,24 @@ const Home = () => {
       </section>
 
       {/* Custom CSS for animations */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+      <style>{`
+        .animate-features {
+          animation: fadeInUp 0.7s ease-out forwards;
         }
-        .floating {
-          animation: float 3s ease-in-out infinite;
+        
+        .animate-courses {
+          animation: fadeInUp 0.7s ease-out forwards;
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>

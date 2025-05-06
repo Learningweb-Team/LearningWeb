@@ -5,11 +5,14 @@ import cloudinary from '../config/cloudinary.js';
 // Create a new course
 export const createCourse = async (req, res) => {
   try {
-    const { title, description } = req.body;
-    
+    const { title, description, coverPhotoUrl, coverPhotoPublicId, modules } = req.body;
+
     const course = new Course({
       title,
-      description
+      description,
+      coverPhotoUrl,
+      coverPhotoPublicId,
+      modules
     });
 
     await course.save();
@@ -201,6 +204,68 @@ export const getAdminProfile = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get admin profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// controllers/adminController.js
+
+// New endpoint to handle complete course publishing
+// In adminController.js - update publishCourse
+export const publishCourse = async (req, res) => {
+  try {
+    console.log('Raw request body:', req.body); // Debug log
+    
+    const { title, description, coverPhoto, modules } = req.body;
+
+    // Transform the data structure to match schema
+    const courseData = {
+      title,
+      description,
+      coverPhotoUrl: coverPhoto?.url || '',
+      coverPhotoPublicId: coverPhoto?.publicId || '',
+      modules: modules.map(module => ({
+        title: module.title,
+        description: module.description,
+        coverPhotoUrl: module.coverPhoto?.url || '',
+        coverPhotoPublicId: module.coverPhoto?.publicId || '',
+        classes: module.classes.map(cls => ({
+          title: cls.title,
+          week: cls.week,
+          description: cls.description,
+          videoUrl: cls.videoUrl || '',
+          publicId: cls.publicId || '',
+          duration: cls.duration || 0
+        })),
+        assignments: module.assignments || []
+      }))
+    };
+
+    console.log('Transformed course data:', courseData); // Debug log
+
+    const course = new Course(courseData);
+    const savedCourse = await course.save();
+
+    console.log('Saved course:', savedCourse); // Debug log
+
+    res.status(201).json({
+      success: true,
+      data: savedCourse
+    });
+  } catch (error) {
+    console.error('Publish error:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course title already exists'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to publish course',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

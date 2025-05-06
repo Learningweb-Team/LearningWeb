@@ -7,6 +7,7 @@ import connectDB from "./config/db.js";
 import courseRoutes from "./routes/courseRoutes.js"; 
 import authRoutes from "./routes/authRoutes.js"; 
 import dashboardRoutes from "./routes/dashboardRoutes.js"; 
+import adminRoutes from './routes/adminRoutes.js';
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ if (process.env.NODE_ENV !== "production") {
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/courses", courseRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Cloudinary Upload Route
 app.post('/api/upload/video', async (req, res) => {

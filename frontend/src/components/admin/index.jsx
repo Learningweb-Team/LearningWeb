@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, X, LogOut } from 'lucide-react';
 import AdminMainContent from './AdminMainContent';
@@ -31,7 +32,7 @@ const Admin = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [coverPhoto, setCoverPhoto] = useState(null);
+  const [coverPhoto, setCoverPhoto] = useState({ file: null, url: '' });
   const [activeModuleId, setActiveModuleId] = useState(1);
   const [videoPreview, setVideoPreview] = useState(null);
   const backgroundRef = useRef(null);
@@ -65,7 +66,6 @@ const Admin = () => {
     }
 
     try {
-      setUploading(true);
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
         { method: 'POST', body: formData }
@@ -76,12 +76,10 @@ const Admin = () => {
     } catch (error) {
       setUploadError(error.message || 'Upload failed');
       return null;
-    } finally {
-      setUploading(false);
     }
   };
 
-  const handleVideoUpload = async (moduleId, classId, e) => {
+  const handleVideoUpload = (moduleId, classId, e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -100,23 +98,18 @@ const Admin = () => {
       return;
     }
 
-    const uploadResult = await uploadToCloudinary(file, 'video');
-    if (uploadResult) {
-      setModules(prevModules => prevModules.map(module => 
-        module.id === moduleId ? {
-          ...module,
-          classes: module.classes.map(cls => 
-            cls.id === classId ? { 
-              ...cls, 
-              videoUrl: uploadResult.url,
-              publicId: uploadResult.publicId
-            } : cls
-          )
-        } : module
-      ));
-      setSuccessMessage('Video uploaded successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }
+    setModules(prevModules => prevModules.map(module => 
+      module.id === moduleId ? {
+        ...module,
+        classes: module.classes.map(cls => 
+          cls.id === classId ? { 
+            ...cls, 
+            videoFile: file,
+            videoUrl: URL.createObjectURL(file) // For preview
+          } : cls
+        )
+      } : module
+    ));
   };
 
   const removeVideo = (moduleId, classId) => {
@@ -127,14 +120,15 @@ const Admin = () => {
           cls.id === classId ? { 
             ...cls, 
             videoUrl: '',
-            publicId: ''
+            publicId: '',
+            videoFile: undefined
           } : cls
         )
       } : module
     ));
   };
 
-  const handleCoverPhotoUpload = async (e) => {
+  const handleCoverPhotoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -153,86 +147,125 @@ const Admin = () => {
       return;
     }
 
-    const uploadResult = await uploadToCloudinary(file, 'image', activeModuleId);
-    if (uploadResult) {
+    if (activeModuleId) {
       setModules(prevModules => prevModules.map(module => 
         module.id === activeModuleId ? {
           ...module,
-          coverPhotoUrl: uploadResult.url,
-          coverPhotoPublicId: uploadResult.publicId
+          coverPhotoFile: file,
+          coverPhotoUrl: URL.createObjectURL(file)
         } : module
       ));
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPhoto(reader.result);
-      };
-      reader.readAsDataURL(file);
-
-      setSuccessMessage('Cover photo uploaded successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+    } else {
+      setCoverPhoto({
+        file,
+        url: URL.createObjectURL(file)
+      });
     }
   };
 
-  const removeCoverPhoto = async () => {
-    try {
-      const module = modules.find(m => m.id === activeModuleId);
-      if (!module) return;
-
-      if (module.coverPhotoPublicId) {
-        await fetch(`/api/admin/delete-image`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ publicId: module.coverPhotoPublicId })
-        });
-      }
-
-      setModules(prevModules => prevModules.map(m => 
-        m.id === activeModuleId ? {
-          ...m,
+  const removeCoverPhoto = () => {
+    if (activeModuleId) {
+      setModules(prevModules => prevModules.map(module => 
+        module.id === activeModuleId ? {
+          ...module,
           coverPhotoUrl: '',
-          coverPhotoPublicId: ''
-        } : m
+          coverPhotoPublicId: '',
+          coverPhotoFile: undefined
+        } : module
       ));
-
-      setCoverPhoto(null);
-      setSuccessMessage('Cover photo removed successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      setUploadError('Failed to remove cover photo');
+    } else {
+      setCoverPhoto({ file: null, url: '' });
     }
   };
 
-  const handleUploadToCourses = async () => {
-    try {
-      setUploading(true);
-      setUploadError('');
-      setSuccessMessage('');
+// In your Admin component - update handleUploadToCourses
+const handleUploadToCourses = async () => {
+  try {
+    setUploading(true);
+    setUploadError('');
+    setSuccessMessage('');
 
-      const updatedModules = [...modules];
-      const moduleIndex = updatedModules.findIndex(m => m.id === activeModuleId);
-      
-      if (moduleIndex !== -1) {
-        for (const cls of updatedModules[moduleIndex].classes) {
-          if (!cls.videoUrl && cls.videoFile) {
-            const uploadResult = await uploadToCloudinary(cls.videoFile, 'video');
-            if (uploadResult) {
-              cls.videoUrl = uploadResult.url;
-              cls.publicId = uploadResult.publicId;
-            }
-          }
-        }
-
-        setModules(updatedModules);
-        setSuccessMessage('Module uploaded successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
+    // Upload course cover photo
+    let courseCoverPhoto = { url: '', publicId: '' };
+    if (coverPhoto.file) {
+      const result = await uploadToCloudinary(coverPhoto.file, 'image');
+      if (result) {
+        courseCoverPhoto = result;
+      } else {
+        throw new Error('Failed to upload course cover photo');
       }
-    } catch (error) {
-      setUploadError('Failed to upload module: ' + error.message);
-    } finally {
-      setUploading(false);
     }
-  };
+
+    // Upload all module content
+    const updatedModules = await Promise.all(modules.map(async (module) => {
+      // Upload module cover photo
+      let moduleCoverPhoto = { url: '', publicId: '' };
+      if (module.coverPhotoFile) {
+        const result = await uploadToCloudinary(module.coverPhotoFile, 'image');
+        if (result) {
+          moduleCoverPhoto = result;
+        } else {
+          throw new Error(`Failed to upload cover photo for module ${module.title}`);
+        }
+      }
+
+      // Upload class videos
+      const updatedClasses = await Promise.all(module.classes.map(async (cls) => {
+        if (cls.videoFile) {
+          const result = await uploadToCloudinary(cls.videoFile, 'video');
+          if (!result) {
+            throw new Error(`Failed to upload video for class ${cls.title}`);
+          }
+          return {
+            ...cls,
+            videoUrl: result.url,
+            publicId: result.publicId
+          };
+        }
+        return cls;
+      }));
+
+      return {
+        ...module,
+        coverPhoto: moduleCoverPhoto,
+        classes: updatedClasses
+      };
+    }));
+
+    // Prepare final data
+    const courseData = {
+      title: courseTitle,
+      description: "Course description", // Should be dynamic
+      coverPhoto: courseCoverPhoto,
+      modules: updatedModules
+    };
+
+    console.log('Final data being sent:', courseData); // Debug log
+
+    const response = await fetch('http://localhost:5000/api/admin/publish', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(courseData)
+    });
+
+    const data = await response.json();
+    console.log('Response from server:', data); // Debug log
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to save course to database');
+    }
+
+    setSuccessMessage('Course published and saved to database successfully!');
+  } catch (error) {
+    console.error('Publishing error:', error);
+    setUploadError(error.message);
+  } finally {
+    setUploading(false);
+  }
+};
 
   const addNewModule = () => {
     const newModuleId = modules.length > 0 ? Math.max(...modules.map(m => m.id)) + 1 : 1;
@@ -252,6 +285,7 @@ const Admin = () => {
   };
 
   const addNewClass = () => {
+    const activeModule = modules.find(m => m.id === activeModuleId);
     if (!activeModule) return;
 
     const newClassId = activeModule.classes.length > 0 
@@ -404,7 +438,7 @@ const Admin = () => {
             handleVideoUpload={handleVideoUpload}
             removeVideo={removeVideo}
             onUploadToCourses={handleUploadToCourses}
-            coverPhoto={coverPhoto}
+            coverPhoto={coverPhoto.url}
             setCoverPhoto={handleCoverPhotoUpload}
             removeCoverPhoto={removeCoverPhoto}
             videoPreview={videoPreview}

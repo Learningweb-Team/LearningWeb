@@ -1,7 +1,13 @@
 import express from 'express';
 import { videoUpload, imageUpload } from '../middleware/uploadMiddleware.js';
-import { uploadClassVideo, uploadCoverPhoto, getAdminProfile } from '../controllers/adminController.js';
-import { authMiddleware as protect, admin } from '../middleware/authMiddleware.js';
+import { 
+  uploadClassVideo, 
+  uploadCoverPhoto, 
+  getAdminProfile,
+  createCourse  // Make sure this is imported
+} from '../controllers/adminController.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
+import Course from '../models/Course.js';  // Import Course model
 
 const router = express.Router();
 
@@ -9,7 +15,7 @@ const router = express.Router();
 router.route('/profile')
   .get(protect, admin, getAdminProfile);
 
-// Video upload route (with proper error handling)
+// Video upload route
 router.route('/:courseId/modules/:moduleId/classes/:classId/video')
   .post(
     protect,
@@ -29,7 +35,7 @@ router.route('/:courseId/modules/:moduleId/classes/:classId/video')
     uploadClassVideo
   );
 
-// Image upload route (with proper error handling)
+// Image upload route
 router.route('/:courseId/cover')
   .post(
     protect,
@@ -49,4 +55,32 @@ router.route('/:courseId/cover')
     uploadCoverPhoto
   );
 
+// Create new course route
+router.post('/', protect, admin, async (req, res) => {
+  try {
+    const { title, description, coverPhotoUrl, coverPhotoPublicId, modules } = req.body;
+
+    const course = new Course({
+      title,
+      description,
+      coverPhotoUrl,
+      coverPhotoPublicId,
+      modules
+    });
+
+    const createdCourse = await course.save();
+
+    res.status(201).json({
+      success: true,
+      data: createdCourse
+    });
+  } catch (error) {
+    console.error('Course creation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create course',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 export default router;
