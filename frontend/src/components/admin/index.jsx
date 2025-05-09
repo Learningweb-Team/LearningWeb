@@ -1,7 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, LogOut } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import AdminSidebar from './AdminSidebar'; // Update path as needed
 import AdminMainContent from './AdminMainContent';
+
 const Admin = () => {
   const [activeTab, setActiveTab] = useState('Courses');
   const [modules, setModules] = useState([
@@ -31,9 +32,10 @@ const Admin = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [coverPhoto, setCoverPhoto] = useState({ file: null, url: '',publicId: '',isUploaded: false });
+  const [coverPhoto, setCoverPhoto] = useState({ file: null, url: '', publicId: '', isUploaded: false });
   const [activeModuleId, setActiveModuleId] = useState(1);
   const [videoPreview, setVideoPreview] = useState(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const backgroundRef = useRef(null);
 
   // Interactive background effect
@@ -111,7 +113,7 @@ const Admin = () => {
           cls.id === classId ? { 
             ...cls, 
             videoFile: file,
-            videoUrl: URL.createObjectURL(file) // For preview
+            videoUrl: URL.createObjectURL(file)
           } : cls
         )
       } : module
@@ -160,160 +162,73 @@ const Admin = () => {
       isUploaded: false
     });
   };
+
   const removeCoverPhoto = () => {
-    if (activeModuleId) {
-      setModules(prevModules => prevModules.map(module => 
-        module.id === activeModuleId ? {
-          ...module,
-          coverPhotoUrl: '',
-          coverPhotoPublicId: '',
-          coverPhotoFile: undefined
-        } : module
-      ));
-    } else {
-      setCoverPhoto({ file: null, url: '' });
+    setCoverPhoto({ file: null, url: '', publicId: '', isUploaded: false });
+  };
+
+  const handleUploadToCourses = async () => {
+    try {
+      setUploading(true);
+      setUploadError('');
+      setSuccessMessage('');
+
+      if (!courseTitle.trim()) throw new Error('Course title is required');
+      if (!coverPhoto.file) throw new Error('Cover photo is required');
+
+      const uploadResult = await uploadToCloudinary(coverPhoto.file, 'image');
+      if (!uploadResult?.url) throw new Error('Failed to upload cover photo');
+
+      const courseData = {
+        title: courseTitle,
+        description: "Course description",
+        coverPhoto: uploadResult,
+        modules: modules.map(module => ({
+          title: module.title,
+          description: module.description,
+          classes: module.classes.map(cls => ({
+            title: cls.title,
+            description: cls.description,
+            videoUrl: cls.videoUrl,
+            publicId: cls.publicId
+          })),
+          assignments: module.assignments
+        }))
+      };
+
+      const response = await fetch('http://localhost:5000/api/admin/publish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(courseData)
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to publish course');
+
+      setSuccessMessage('Course published successfully!');
+      setCourseTitle('');
+      setModules([{
+        id: 1,
+        title: 'Module 1: New Module',
+        description: '',
+        classes: [],
+        assignments: [],
+        coverPhotoUrl: '',
+        coverPhotoPublicId: ''
+      }]);
+      setCoverPhoto({ file: null, url: '', publicId: '', isUploaded: false });
+      
+    } catch (error) {
+      console.error('Publishing error:', error);
+      setUploadError(error.message);
+    } finally {
+      setUploading(false);
     }
   };
 
-// In your Admin component - update handleUploadToCourses
-// Update the handleUploadToCourses function in Admin.jsx
-const handleUploadToCourses = async () => {
-  try {
-    setUploading(true);
-    setUploadError('');
-    setSuccessMessage('');
-
-    // Debug current state
-    console.log('Current cover photo state:', coverPhoto);
-
-    // Validate required fields
-    if (!courseTitle.trim()) {
-      throw new Error('Course title is required');
-    }
-
-    // Validate cover photo exists
-    if (!coverPhoto.file) {
-      throw new Error('Please upload a course cover photo');
-    }
-
-    // Upload cover photo if not already uploaded
-    let coverPhotoResult = coverPhoto;
-    if (!coverPhoto.isUploaded) {
-      console.log('Starting course cover photo upload...');
-      const uploadResult = await uploadToCloudinary(coverPhoto.file, 'image');
-      if (!uploadResult?.url) {
-        throw new Error('Failed to upload course cover photo to Cloudinary');
-      }
-      console.log('Course cover uploaded:', uploadResult.url);
-      coverPhotoResult = {
-        ...uploadResult,
-        isUploaded: true
-      };
-    }
-
-    // Process modules
-    const updatedModules = [];
-    for (const module of modules) {
-      // Validate module
-      if (!module.title.trim()) {
-        throw new Error(`Module "${module.title}" title is required`);
-      }
-
-      // Upload module cover if exists
-      let moduleCover = { url: '', publicId: '' };
-      if (module.coverPhotoFile) {
-        console.log(`Uploading cover for module ${module.id}...`);
-        const coverResult = await uploadToCloudinary(module.coverPhotoFile, 'image', module.id);
-        if (coverResult) {
-          moduleCover = coverResult;
-          console.log(`Module ${module.id} cover uploaded:`, coverResult.url);
-        }
-      }
-
-      // Process classes
-      const updatedClasses = [];
-      for (const cls of module.classes) {
-        if (!cls.title.trim()) {
-          throw new Error(`Class title in module "${module.title}" is required`);
-        }
-
-        // Upload video if exists
-        let videoData = { url: cls.videoUrl || '', publicId: cls.publicId || '' };
-        if (cls.videoFile) {
-          console.log(`Uploading video for class ${cls.title}...`);
-          const videoResult = await uploadToCloudinary(cls.videoFile, 'video', module.id);
-          if (videoResult) {
-            videoData = videoResult;
-            console.log(`Class ${cls.title} video uploaded:`, videoResult.url);
-          }
-        }
-
-        updatedClasses.push({
-          ...cls,
-          videoUrl: videoData.url,
-          publicId: videoData.publicId
-        });
-      }
-
-      updatedModules.push({
-        title: module.title,
-        description: module.description,
-        coverPhoto: moduleCover,
-        classes: updatedClasses,
-        assignments: module.assignments || []
-      });
-    }
-
-    // Prepare final course data
-    const courseData = {
-      title: courseTitle,
-      description: "Course description", // Add a way to set this in UI
-      coverPhoto: {
-        url: coverPhotoResult.url,
-        publicId: coverPhotoResult.publicId
-      },
-      modules: updatedModules
-    };
-
-    console.log('Sending course data to server:', courseData);
-    const response = await fetch('http://localhost:5000/api/admin/publish', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(courseData)
-    });
-
-    const data = await response.json();
-    console.log('Server response:', data);
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to publish course');
-    }
-
-    setSuccessMessage('Course published successfully!');
-    
-    // Reset form after successful publish
-    setCourseTitle('');
-    setModules([{
-      id: 1,
-      title: 'Module 1: New Module',
-      description: '',
-      classes: [],
-      assignments: [],
-      coverPhotoUrl: '',
-      coverPhotoPublicId: ''
-    }]);
-    setCoverPhoto({ file: null, url: '', publicId: '', isUploaded: false });
-    
-  } catch (error) {
-    console.error('Publishing error:', error);
-    setUploadError(error.message);
-  } finally {
-    setUploading(false);
-  }
-};
   const addNewClass = () => {
     const activeModule = modules.find(m => m.id === activeModuleId);
     if (!activeModule) return;
@@ -350,9 +265,9 @@ const handleUploadToCourses = async () => {
       style={{
         '--x': '0.5',
         '--y': '0.5',
-        '--color-1': 'rgba(99, 102, 241, 0.1)',
-        '--color-2': 'rgba(168, 85, 247, 0.1)',
-        '--color-3': 'rgba(236, 72, 153, 0.1)',
+        '--color-1': 'rgba(94, 99, 229, 0.85)',
+        '--color-2': 'rgba(145, 35, 248, 0.83)',
+        '--color-3': 'rgba(7, 85, 137, 0.87)',
       }}
     >
       {/* Interactive gradient background */}
@@ -376,7 +291,7 @@ const handleUploadToCourses = async () => {
                 var(--color-3),
                 transparent 40%
               ),
-              linear-gradient(to bottom right,rgb(3, 162, 231),rgb(5, 214, 148))
+              linear-gradient(to bottom right,rgb(43, 219, 208),rgb(4, 79, 89))
             `,
             filter: 'blur(120px)',
             transform: 'scale(1.2)',
@@ -398,11 +313,25 @@ const handleUploadToCourses = async () => {
         />
       </div>
 
+      {/* Mobile sidebar toggle button */}
+      <button 
+        onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-black/80 rounded-full text-white"
+      >
+        {mobileSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
       <div className="flex min-h-screen">
-       
+        {/* Sidebar */}
+        <AdminSidebar 
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
         {/* Main Content */}
-        <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : ''}`}>
+        <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
           <AdminMainContent
             courseTitle={courseTitle}
             setCourseTitle={setCourseTitle}
@@ -418,9 +347,10 @@ const handleUploadToCourses = async () => {
             onUploadToCourses={handleUploadToCourses}
             coverPhoto={coverPhoto.url}
             setCoverPhoto={handleCoverPhotoUpload}
-            removeCoverPhoto={() => setCoverPhoto({ file: null, url: '', publicId: '', isUploaded: false })}
+            removeCoverPhoto={removeCoverPhoto}
             videoPreview={videoPreview}
             setVideoPreview={setVideoPreview}
+            addNewClass={addNewClass}
           />
         </div>
       </div>

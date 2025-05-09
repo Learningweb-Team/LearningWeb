@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Video, Image, Plus, Trash2, X, Eye, Edit } from 'lucide-react';
+import { Upload, Video, Image, Plus, Trash2, X, Eye, Edit, Check } from 'lucide-react';
 
 const AdminMainContent = ({
   courseTitle,
@@ -13,35 +13,208 @@ const AdminMainContent = ({
   onUploadToCourses,
   coverPhoto,
   setCoverPhoto,
-  removeCoverPhoto
+  removeCoverPhoto,
+  uploading,
+  uploadError,
+  successMessage
 }) => {
   const [videoPreview, setVideoPreview] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [editingCourseTitle, setEditingCourseTitle] = useState(false);
+  const [tempCourseTitle, setTempCourseTitle] = useState(courseTitle);
+  const [courseDescription, setCourseDescription] = useState('Master digital marketing with this comprehensive course');
+  
   const activeModule = modules.find(module => module.id === activeModuleId);
 
-  const toggleEditDescription = (moduleId, classId) => {
-    setModules(modules.map(module =>
-      module.id === moduleId
-        ? {
-            ...module,
-            classes: module.classes.map(cls =>
-              cls.id === classId ? { ...cls, isEditing: !cls.isEditing } : cls
-            )
-          }
-        : module
-    ));
+  // Toggle edit mode for various fields
+  const toggleEdit = (field, moduleId = null, classId = null, assignmentId = null) => {
+    if (field === 'courseTitle') {
+      setEditingCourseTitle(!editingCourseTitle);
+      if (editingCourseTitle) {
+        setCourseTitle(tempCourseTitle);
+      }
+      return;
+    }
+
+    setModules(modules.map(module => {
+      if (moduleId && module.id !== moduleId) return module;
+      
+      if (field === 'moduleTitle') {
+        return {
+          ...module,
+          editingTitle: !module.editingTitle,
+          tempTitle: module.editingTitle ? module.tempTitle : module.title
+        };
+      }
+      
+      if (field === 'moduleDescription') {
+        return {
+          ...module,
+          editingDescription: !module.editingDescription,
+          tempDescription: module.editingDescription ? module.tempDescription : module.description
+        };
+      }
+      
+      if (classId && field === 'classTitle') {
+        return {
+          ...module,
+          classes: module.classes.map(cls => 
+            cls.id === classId 
+              ? { 
+                  ...cls, 
+                  editingTitle: !cls.editingTitle,
+                  tempTitle: cls.editingTitle ? cls.tempTitle : cls.title
+                } 
+              : cls
+          )
+        };
+      }
+      
+      if (classId && field === 'classDescription') {
+        return {
+          ...module,
+          classes: module.classes.map(cls => 
+            cls.id === classId 
+              ? { 
+                  ...cls, 
+                  isEditing: !cls.isEditing,
+                  tempDescription: cls.isEditing ? cls.tempDescription : cls.description
+                } 
+              : cls
+          )
+        };
+      }
+      
+      if (assignmentId && field === 'assignmentTitle') {
+        return {
+          ...module,
+          assignments: module.assignments.map(assignment => 
+            assignment.id === assignmentId 
+              ? { 
+                  ...assignment, 
+                  editing: !assignment.editing,
+                  tempTitle: assignment.editing ? assignment.tempTitle : assignment.title
+                } 
+              : assignment
+          )
+        };
+      }
+      
+      return module;
+    }));
   };
 
-  const updateDescription = (moduleId, classId, newDesc) => {
-    setModules(modules.map(module =>
-      module.id === moduleId
-        ? {
-            ...module,
-            classes: module.classes.map(cls =>
-              cls.id === classId ? { ...cls, description: newDesc } : cls
-            )
-          }
-        : module
-    ));
+  // Update field values
+  const updateField = (field, value, moduleId = null, classId = null, assignmentId = null) => {
+    if (field === 'courseTitle') {
+      setTempCourseTitle(value);
+      return;
+    }
+
+    setModules(modules.map(module => {
+      if (moduleId && module.id !== moduleId) return module;
+      
+      if (field === 'moduleTitle') {
+        return { ...module, tempTitle: value };
+      }
+      
+      if (field === 'moduleDescription') {
+        return { ...module, tempDescription: value };
+      }
+      
+      if (classId && field === 'classTitle') {
+        return {
+          ...module,
+          classes: module.classes.map(cls => 
+            cls.id === classId ? { ...cls, tempTitle: value } : cls
+          )
+        };
+      }
+      
+      if (classId && field === 'classDescription') {
+        return {
+          ...module,
+          classes: module.classes.map(cls => 
+            cls.id === classId ? { ...cls, tempDescription: value } : cls
+          )
+        };
+      }
+      
+      if (assignmentId && field === 'assignmentTitle') {
+        return {
+          ...module,
+          assignments: module.assignments.map(assignment => 
+            assignment.id === assignmentId ? { ...assignment, tempTitle: value } : assignment
+          )
+        };
+      }
+      
+      return module;
+    }));
+  };
+
+  // Save changes for various fields
+  const saveChanges = (field, moduleId = null, classId = null, assignmentId = null) => {
+    if (field === 'courseTitle') {
+      setCourseTitle(tempCourseTitle);
+      setEditingCourseTitle(false);
+      return;
+    }
+
+    setModules(modules.map(module => {
+      if (moduleId && module.id !== moduleId) return module;
+      
+      if (field === 'moduleTitle') {
+        return {
+          ...module,
+          title: module.tempTitle,
+          editingTitle: false
+        };
+      }
+      
+      if (field === 'moduleDescription') {
+        return {
+          ...module,
+          description: module.tempDescription,
+          editingDescription: false
+        };
+      }
+      
+      if (classId && field === 'classTitle') {
+        return {
+          ...module,
+          classes: module.classes.map(cls => 
+            cls.id === classId 
+              ? { ...cls, title: cls.tempTitle, editingTitle: false } 
+              : cls
+          )
+        };
+      }
+      
+      if (classId && field === 'classDescription') {
+        return {
+          ...module,
+          classes: module.classes.map(cls => 
+            cls.id === classId 
+              ? { ...cls, description: cls.tempDescription, isEditing: false } 
+              : cls
+          )
+        };
+      }
+      
+      if (assignmentId && field === 'assignmentTitle') {
+        return {
+          ...module,
+          assignments: module.assignments.map(assignment => 
+            assignment.id === assignmentId 
+              ? { ...assignment, title: assignment.tempTitle, editing: false } 
+              : assignment
+          )
+        };
+      }
+      
+      return module;
+    }));
   };
 
   const handleViewVideo = (videoUrl) => {
@@ -55,11 +228,15 @@ const AdminMainContent = ({
       {
         id: newModuleId,
         title: `Module ${newModuleId}: New Module`,
+        tempTitle: `Module ${newModuleId}: New Module`,
         description: 'Module description',
+        tempDescription: 'Module description',
         classes: [],
         assignments: [],
         coverPhotoUrl: '',
-        coverPhotoPublicId: ''
+        coverPhotoPublicId: '',
+        editingTitle: false,
+        editingDescription: false
       }
     ]);
     setActiveModuleId(newModuleId);
@@ -81,11 +258,14 @@ const AdminMainContent = ({
               {
                 id: newClassId,
                 title: 'New Lesson',
+                tempTitle: 'New Lesson',
                 week: `Week ${module.classes.length + 1}`,
                 description: 'Lesson description',
+                tempDescription: 'Lesson description',
                 videoUrl: '',
                 publicId: '',
-                isEditing: false
+                isEditing: false,
+                editingTitle: false
               }
             ]
           }
@@ -93,22 +273,98 @@ const AdminMainContent = ({
     ));
   };
 
+  const addNewAssignment = () => {
+    if (!activeModule) return;
+
+    const newAssignmentId = activeModule.assignments.length
+      ? Math.max(...activeModule.assignments.map(a => a.id)) + 1
+      : 1;
+
+    setModules(modules.map(module =>
+      module.id === activeModuleId
+        ? {
+            ...module,
+            assignments: [
+              ...module.assignments,
+              {
+                id: newAssignmentId,
+                title: 'New Assignment',
+                tempTitle: 'New Assignment',
+                editing: false
+              }
+            ]
+          }
+        : module
+    ));
+  };
+
+  const removeAssignment = (moduleId, assignmentId) => {
+    setModules(modules.map(module =>
+      module.id === moduleId
+        ? {
+            ...module,
+            assignments: module.assignments.filter(a => a.id !== assignmentId)
+          }
+        : module
+    ));
+  };
+
+  const handlePublish = async () => {
+    await onUploadToCourses();
+    if (!uploadError) {
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 3000);
+    }
+  };
+
   return (
     <div className="flex-1 p-6 max-w-4xl mx-auto space-y-6">
       {/* Course Header */}
-      <div className="bg-white rounded-xl p-6 shadow border text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">{courseTitle}</h1>
-        <p className="text-gray-600">Create different lessons under sections for your digital marketing course.</p>
+      <div className="bg-white rounded-xl p-6 shadow border">
+        {editingCourseTitle ? (
+          <div className="flex items-center mb-2">
+            <input
+              type="text"
+              value={tempCourseTitle}
+              onChange={(e) => updateField('courseTitle', e.target.value)}
+              className="text-2xl font-bold text-gray-800 flex-1 border-b-2 border-blue-500 focus:outline-none"
+              autoFocus
+            />
+            <button
+              onClick={() => saveChanges('courseTitle')}
+              className="ml-2 p-1 text-green-500 hover:text-green-700"
+            >
+              <Check size={20} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center mb-2">
+            <h1 className="text-2xl font-bold text-gray-800">{courseTitle}</h1>
+            <button
+              onClick={() => toggleEdit('courseTitle')}
+              className="ml-2 p-1 text-blue-500 hover:text-blue-700"
+            >
+              <Edit size={18} />
+            </button>
+          </div>
+        )}
+        
+        <div className="flex items-start">
+          <p className="text-gray-600 flex-1">{courseDescription}</p>
+          <button className="ml-2 p-1 text-blue-500 hover:text-blue-700">
+            <Edit size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Cover Photo */}
       <div className="bg-white rounded-xl p-6 shadow border">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Cover Photo</h2>
         <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-          {(coverPhoto || activeModule?.coverPhotoUrl) ? (
+          {coverPhoto ? (
             <>
               <img
-                src={coverPhoto || activeModule.coverPhotoUrl}
+                src={coverPhoto}
                 alt="Course cover"
                 className="w-full h-full object-cover"
               />
@@ -164,9 +420,66 @@ const AdminMainContent = ({
       {/* Active Module Details */}
       {activeModule && (
         <div className="bg-white rounded-xl p-6 shadow border space-y-6">
+          {/* Module Title */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">{activeModule.title}</h2>
-            <p className="text-gray-600 mt-1">{activeModule.description}</p>
+            {activeModule.editingTitle ? (
+              <div className="flex items-center mb-1">
+                <input
+                  type="text"
+                  value={activeModule.tempTitle}
+                  onChange={(e) => updateField('moduleTitle', e.target.value, activeModule.id)}
+                  className="text-xl font-semibold text-gray-800 flex-1 border-b-2 border-blue-500 focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  onClick={() => saveChanges('moduleTitle', activeModule.id)}
+                  className="ml-2 p-1 text-green-500 hover:text-green-700"
+                >
+                  <Check size={20} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center mb-1">
+                <h2 className="text-xl font-semibold text-gray-800">{activeModule.title}</h2>
+                <button
+                  onClick={() => toggleEdit('moduleTitle', activeModule.id)}
+                  className="ml-2 p-1 text-blue-500 hover:text-blue-700"
+                >
+                  <Edit size={18} />
+                </button>
+              </div>
+            )}
+            
+            {/* Module Description */}
+            {activeModule.editingDescription ? (
+              <div className="mb-3">
+                <textarea
+                  value={activeModule.tempDescription}
+                  onChange={(e) => updateField('moduleDescription', e.target.value, activeModule.id)}
+                  className="w-full p-2 border rounded text-gray-600"
+                  rows="3"
+                  autoFocus
+                />
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => saveChanges('moduleDescription', activeModule.id)}
+                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start mb-3">
+                <p className="text-gray-600 flex-1">{activeModule.description}</p>
+                <button
+                  onClick={() => toggleEdit('moduleDescription', activeModule.id)}
+                  className="ml-2 p-1 text-blue-500 hover:text-blue-700"
+                >
+                  <Edit size={16} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Lessons */}
@@ -186,28 +499,64 @@ const AdminMainContent = ({
               <div className="space-y-4">
                 {activeModule.classes.map(cls => (
                   <div key={cls.id} className="bg-gray-50 rounded-lg p-4 border">
+                    {/* Class Title */}
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-gray-800">{cls.title}</h4>
+                      {cls.editingTitle ? (
+                        <div className="flex items-center flex-1">
+                          <input
+                            type="text"
+                            value={cls.tempTitle}
+                            onChange={(e) => updateField('classTitle', e.target.value, activeModule.id, cls.id)}
+                            className="font-medium text-gray-800 flex-1 border-b-2 border-blue-500 focus:outline-none"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => saveChanges('classTitle', activeModule.id, cls.id)}
+                            className="ml-2 p-1 text-green-500 hover:text-green-700"
+                          >
+                            <Check size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center flex-1">
+                          <h4 className="font-medium text-gray-800">{cls.title}</h4>
+                          <button
+                            onClick={() => toggleEdit('classTitle', activeModule.id, cls.id)}
+                            className="ml-2 p-1 text-blue-500 hover:text-blue-700"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        </div>
+                      )}
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                         {cls.week}
                       </span>
                     </div>
 
-                    {/* Editable Description */}
+                    {/* Class Description */}
                     {cls.isEditing ? (
-                      <textarea
-                        value={cls.description}
-                        onChange={(e) => updateDescription(activeModule.id, cls.id, e.target.value)}
-                        className="w-full p-2 border rounded text-sm text-gray-600 mb-3"
-                        rows="3"
-                        autoFocus
-                        onBlur={() => toggleEditDescription(activeModule.id, cls.id)}
-                      />
+                      <div className="mb-3">
+                        <textarea
+                          value={cls.tempDescription}
+                          onChange={(e) => updateField('classDescription', e.target.value, activeModule.id, cls.id)}
+                          className="w-full p-2 border rounded text-sm text-gray-600"
+                          rows="3"
+                          autoFocus
+                        />
+                        <div className="flex justify-end mt-2">
+                          <button
+                            onClick={() => saveChanges('classDescription', activeModule.id, cls.id)}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <div className="flex justify-between mb-3">
                         <p className="text-sm text-gray-600">{cls.description}</p>
                         <button
-                          onClick={() => toggleEditDescription(activeModule.id, cls.id)}
+                          onClick={() => toggleEdit('classDescription', activeModule.id, cls.id)}
                           className="text-blue-500 hover:text-blue-700 ml-2"
                           title="Edit description"
                         >
@@ -250,13 +599,54 @@ const AdminMainContent = ({
 
           {/* Assignments */}
           <div>
-            <h3 className="text-lg font-medium text-gray-800 mb-4">Assignments</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-800">Assignments</h3>
+              <button
+                onClick={addNewAssignment}
+                className="flex items-center px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 text-sm"
+              >
+                <Plus size={16} className="mr-1" />
+                Add Assignment
+              </button>
+            </div>
             {activeModule.assignments.length ? (
               <div className="space-y-2">
                 {activeModule.assignments.map(assignment => (
-                  <div key={assignment.id} className="bg-gray-50 rounded-lg p-3 border flex items-center">
-                    <span className="w-4 h-4 rounded-full bg-blue-200 mr-3" />
-                    <span className="text-gray-800">{assignment.title}</span>
+                  <div key={assignment.id} className="bg-gray-50 rounded-lg p-3 border flex items-center justify-between">
+                    {assignment.editing ? (
+                      <div className="flex items-center flex-1">
+                        <input
+                          type="text"
+                          value={assignment.tempTitle}
+                          onChange={(e) => updateField('assignmentTitle', e.target.value, activeModule.id, null, assignment.id)}
+                          className="text-gray-800 flex-1 border-b-2 border-blue-500 focus:outline-none"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => saveChanges('assignmentTitle', activeModule.id, null, assignment.id)}
+                          className="ml-2 p-1 text-green-500 hover:text-green-700"
+                        >
+                          <Check size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center flex-1">
+                        <span className="w-4 h-4 rounded-full bg-blue-200 mr-3" />
+                        <span className="text-gray-800">{assignment.title}</span>
+                        <button
+                          onClick={() => toggleEdit('assignmentTitle', activeModule.id, null, assignment.id)}
+                          className="ml-2 p-1 text-blue-500 hover:text-blue-700"
+                        >
+                          <Edit size={16} />
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => removeAssignment(activeModule.id, assignment.id)}
+                      className="p-1 text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -270,12 +660,24 @@ const AdminMainContent = ({
       {/* Publish Button */}
       <div className="flex justify-center">
         <button
-          onClick={onUploadToCourses}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+          onClick={handlePublish}
+          disabled={uploading}
+          className={`px-6 py-2 rounded-lg shadow ${
+            uploading 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
         >
-          Publish Changes
+          {uploading ? 'Publishing...' : 'Publish Changes'}
         </button>
       </div>
+
+      {/* Error Message */}
+      {uploadError && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg">
+          {uploadError}
+        </div>
+      )}
 
       {/* Video Preview Modal */}
       {videoPreview && (
@@ -294,6 +696,25 @@ const AdminMainContent = ({
               <source src={videoPreview} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="text-green-500" size={32} />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Course Published Successfully!</h3>
+            <p className="text-gray-600 mb-4">Your course has been uploaded and is now available to students.</p>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Continue Editing
+            </button>
           </div>
         </div>
       )}
