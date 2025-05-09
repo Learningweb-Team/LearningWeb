@@ -12,25 +12,37 @@ const Courses = () => {
   const [filter, setFilter] = useState('all');
 
 // In your Courses.jsx component
+// src/pages/Courses.jsx
+// src/pages/Courses.jsx
 useEffect(() => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      console.log("Fetching courses...");
+      console.log('Fetching courses from API...');
       const response = await axios.get("http://localhost:5000/api/courses");
-      console.log("API Response:", response);
-      setCourses(response.data.data);
-      setLoading(false);
+      
+      console.log('API response:', response);
+      
+      // Handle different response structures
+      const coursesData = response.data.data || response.data;
+      
+      if (!Array.isArray(coursesData)) {
+        throw new Error('Invalid courses data format');
+      }
+      
+      setCourses(coursesData);
+      setError('');
     } catch (err) {
-      console.error("Error fetching courses:", err);
-      setError(err.response?.data?.message || "Failed to fetch courses");
+      console.error("Course fetch error:", err);
+      setError(err.response?.data?.message || err.message || "Failed to load courses");
+      setCourses([]); // Reset courses on error
+    } finally {
       setLoading(false);
     }
   };
 
   fetchCourses();
 }, []);
-
   const filteredCourses = courses.filter(course => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -2,10 +2,11 @@ import mongoose from "mongoose";
 
 // Class Schema
 // In Course model
+// models/Course.js
 const courseSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
-  coverPhotoUrl: String,
+  coverPhotoUrl: { type: String, required: true },
   coverPhotoPublicId: String,
   isPublished: { type: Boolean, default: false },
   publishedAt: Date,
@@ -29,7 +30,9 @@ const courseSchema = new mongoose.Schema({
         publicId: String
       }]
     }]
-  }]
+  }],
+  slug: String,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
 // Model Export

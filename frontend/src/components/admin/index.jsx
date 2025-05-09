@@ -32,7 +32,7 @@ const Admin = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [coverPhoto, setCoverPhoto] = useState({ file: null, url: '' });
+  const [coverPhoto, setCoverPhoto] = useState({ file: null, url: '',publicId: '',isUploaded: false });
   const [activeModuleId, setActiveModuleId] = useState(1);
   const [videoPreview, setVideoPreview] = useState(null);
   const backgroundRef = useRef(null);
@@ -53,28 +53,35 @@ const Admin = () => {
   }, []);
 
   const uploadToCloudinary = async (file, resourceType = 'image', moduleId = null) => {
-    if (!file) return null;
-
+    if (!file) {
+      console.error('No file provided for Cloudinary upload');
+      return null;
+    }
+  
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
     formData.append('api_key', import.meta.env.VITE_CLOUDINARY_API_KEY);
     formData.append('resource_type', resourceType);
-
-    if (resourceType === 'image' && moduleId) {
-      formData.append('folder', `e-learning/courses/${courseTitle}/modules/${moduleId}/images`);
-    }
-
+  
     try {
+      console.log(`Uploading ${resourceType} to Cloudinary...`);
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
         { method: 'POST', body: formData }
       );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Upload failed');
+      }
+      
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error?.message || 'Upload failed');
+      console.log('Cloudinary upload successful:', data);
       return { url: data.secure_url, publicId: data.public_id };
     } catch (error) {
-      setUploadError(error.message || 'Upload failed');
+      console.error('Cloudinary upload error:', error);
+      setUploadError(`Failed to upload ${resourceType}: ${error.message}`);
       return null;
     }
   };
@@ -131,38 +138,29 @@ const Admin = () => {
   const handleCoverPhotoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+  
     setUploadError('');
     setSuccessMessage('');
-
+  
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       setUploadError('Please upload a valid image file (JPEG, PNG, or GIF)');
       return;
     }
-
+  
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       setUploadError('Image file is too large (max 5MB)');
       return;
     }
-
-    if (activeModuleId) {
-      setModules(prevModules => prevModules.map(module => 
-        module.id === activeModuleId ? {
-          ...module,
-          coverPhotoFile: file,
-          coverPhotoUrl: URL.createObjectURL(file)
-        } : module
-      ));
-    } else {
-      setCoverPhoto({
-        file,
-        url: URL.createObjectURL(file)
-      });
-    }
+  
+    setCoverPhoto({
+      file,
+      url: URL.createObjectURL(file),
+      publicId: '',
+      isUploaded: false
+    });
   };
-
   const removeCoverPhoto = () => {
     if (activeModuleId) {
       setModules(prevModules => prevModules.map(module => 
@@ -186,77 +184,99 @@ const handleUploadToCourses = async () => {
     setUploadError('');
     setSuccessMessage('');
 
-    // Validate course title
+    // Debug current state
+    console.log('Current cover photo state:', coverPhoto);
+
+    // Validate required fields
     if (!courseTitle.trim()) {
       throw new Error('Course title is required');
     }
 
-    // Upload course cover photo
-    let courseCoverPhoto = { url: '', publicId: '' };
-    if (coverPhoto.file) {
-      const result = await uploadToCloudinary(coverPhoto.file, 'image');
-      if (result) {
-        courseCoverPhoto = result;
-      } else {
-        throw new Error('Failed to upload course cover photo');
-      }
+    // Validate cover photo exists
+    if (!coverPhoto.file) {
+      throw new Error('Please upload a course cover photo');
     }
 
-    // Upload all module content
-    const updatedModules = await Promise.all(modules.map(async (module) => {
-      // Validate module title
+    // Upload cover photo if not already uploaded
+    let coverPhotoResult = coverPhoto;
+    if (!coverPhoto.isUploaded) {
+      console.log('Starting course cover photo upload...');
+      const uploadResult = await uploadToCloudinary(coverPhoto.file, 'image');
+      if (!uploadResult?.url) {
+        throw new Error('Failed to upload course cover photo to Cloudinary');
+      }
+      console.log('Course cover uploaded:', uploadResult.url);
+      coverPhotoResult = {
+        ...uploadResult,
+        isUploaded: true
+      };
+    }
+
+    // Process modules
+    const updatedModules = [];
+    for (const module of modules) {
+      // Validate module
       if (!module.title.trim()) {
-        throw new Error(`Module ${module.id} title is required`);
+        throw new Error(`Module "${module.title}" title is required`);
       }
 
-      // Upload module cover photo
-      let moduleCoverPhoto = { url: '', publicId: '' };
+      // Upload module cover if exists
+      let moduleCover = { url: '', publicId: '' };
       if (module.coverPhotoFile) {
-        const result = await uploadToCloudinary(module.coverPhotoFile, 'image', module.id);
-        if (result) {
-          moduleCoverPhoto = result;
-        } else {
-          throw new Error(`Failed to upload cover photo for module ${module.title}`);
+        console.log(`Uploading cover for module ${module.id}...`);
+        const coverResult = await uploadToCloudinary(module.coverPhotoFile, 'image', module.id);
+        if (coverResult) {
+          moduleCover = coverResult;
+          console.log(`Module ${module.id} cover uploaded:`, coverResult.url);
         }
       }
 
-      // Upload class videos and validate classes
-      const updatedClasses = await Promise.all(module.classes.map(async (cls) => {
+      // Process classes
+      const updatedClasses = [];
+      for (const cls of module.classes) {
         if (!cls.title.trim()) {
-          throw new Error(`Class title in module ${module.title} is required`);
+          throw new Error(`Class title in module "${module.title}" is required`);
         }
 
+        // Upload video if exists
+        let videoData = { url: cls.videoUrl || '', publicId: cls.publicId || '' };
         if (cls.videoFile) {
-          const result = await uploadToCloudinary(cls.videoFile, 'video', module.id);
-          if (!result) {
-            throw new Error(`Failed to upload video for class ${cls.title}`);
+          console.log(`Uploading video for class ${cls.title}...`);
+          const videoResult = await uploadToCloudinary(cls.videoFile, 'video', module.id);
+          if (videoResult) {
+            videoData = videoResult;
+            console.log(`Class ${cls.title} video uploaded:`, videoResult.url);
           }
-          return {
-            ...cls,
-            videoUrl: result.url,
-            publicId: result.publicId
-          };
         }
-        return cls;
-      }));
 
-      return {
+        updatedClasses.push({
+          ...cls,
+          videoUrl: videoData.url,
+          publicId: videoData.publicId
+        });
+      }
+
+      updatedModules.push({
         title: module.title,
         description: module.description,
-        coverPhoto: moduleCoverPhoto,
+        coverPhoto: moduleCover,
         classes: updatedClasses,
         assignments: module.assignments || []
-      };
-    }));
+      });
+    }
 
-    // Prepare final data
+    // Prepare final course data
     const courseData = {
       title: courseTitle,
-      description: "Course description", // You should add a description field in your UI
-      coverPhoto: courseCoverPhoto,
+      description: "Course description", // Add a way to set this in UI
+      coverPhoto: {
+        url: coverPhotoResult.url,
+        publicId: coverPhotoResult.publicId
+      },
       modules: updatedModules
     };
 
+    console.log('Sending course data to server:', courseData);
     const response = await fetch('http://localhost:5000/api/admin/publish', {
       method: 'POST',
       headers: {
@@ -267,16 +287,27 @@ const handleUploadToCourses = async () => {
     });
 
     const data = await response.json();
+    console.log('Server response:', data);
 
     if (!response.ok) {
       throw new Error(data.message || 'Failed to publish course');
     }
 
     setSuccessMessage('Course published successfully!');
-    // Optionally reset form or redirect
-    // setCourseTitle('');
-    // setModules([]);
-    // setCoverPhoto({ file: null, url: '' });
+    
+    // Reset form after successful publish
+    setCourseTitle('');
+    setModules([{
+      id: 1,
+      title: 'Module 1: New Module',
+      description: '',
+      classes: [],
+      assignments: [],
+      coverPhotoUrl: '',
+      coverPhotoPublicId: ''
+    }]);
+    setCoverPhoto({ file: null, url: '', publicId: '', isUploaded: false });
+    
   } catch (error) {
     console.error('Publishing error:', error);
     setUploadError(error.message);
@@ -284,24 +315,6 @@ const handleUploadToCourses = async () => {
     setUploading(false);
   }
 };
-
-  const addNewModule = () => {
-    const newModuleId = modules.length > 0 ? Math.max(...modules.map(m => m.id)) + 1 : 1;
-    setModules([
-      ...modules,
-      {
-        id: newModuleId,
-        title: `Module ${newModuleId}: New Module`,
-        description: 'Module description',
-        classes: [],
-        assignments: [],
-        coverPhotoUrl: '',
-        coverPhotoPublicId: ''
-      }
-    ]);
-    setActiveModuleId(newModuleId);
-  };
-
   const addNewClass = () => {
     const activeModule = modules.find(m => m.id === activeModuleId);
     if (!activeModule) return;
@@ -458,7 +471,7 @@ const handleUploadToCourses = async () => {
             onUploadToCourses={handleUploadToCourses}
             coverPhoto={coverPhoto.url}
             setCoverPhoto={handleCoverPhotoUpload}
-            removeCoverPhoto={removeCoverPhoto}
+            removeCoverPhoto={() => setCoverPhoto({ file: null, url: '', publicId: '', isUploaded: false })}
             videoPreview={videoPreview}
             setVideoPreview={setVideoPreview}
           />

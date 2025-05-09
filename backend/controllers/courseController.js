@@ -5,16 +5,20 @@ import Course from '../models/Course.js';
 // controllers/courseController.js
 export const getCourses = async (req, res) => {
   try {
+    console.log('Fetching published courses...');
     const courses = await Course.find({ isPublished: true })
       .select('title description coverPhotoUrl modules publishedAt')
       .sort({ publishedAt: -1 })
       .lean();
 
+    console.log(`Found ${courses.length} published courses`);
+    
     res.status(200).json({
       success: true,
-      data: courses
+      data: courses // Changed from data: courses to match frontend expectation
     });
   } catch (error) {
+    console.error('Error fetching courses:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch courses',

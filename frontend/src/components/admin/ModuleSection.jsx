@@ -246,26 +246,54 @@ const ModuleSection = ({
                         />
                       </label>
                       
-                      {uploading && (
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                        </div>
-                      )}
-                      
-                      {uploadError && (
-                        <div className="text-red-500 text-sm p-2 bg-red-50 rounded flex items-center">
-                          <FiX className="mr-1" /> {uploadError}
-                        </div>
-                      )}
-                      
-                      {successMessage && (
-                        <div className="text-green-500 text-sm p-2 bg-green-50 rounded flex items-center">
-                          <FiCheck className="mr-1" /> {successMessage}
-                        </div>
-                      )}
+                      // In your AdminMainContent component's return statement
+{uploading && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg">
+      <p className="mb-2">Publishing course...</p>
+      <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div 
+          className="bg-blue-600 h-2.5 rounded-full" 
+          style={{ width: `${uploadProgress}%` }}
+        ></div>
+      </div>
+    </div>
+  </div>
+)}
+
+{uploadError && (
+  <div className="fixed top-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 z-50">
+    <div className="flex justify-between items-start">
+      <div>
+        <p className="font-bold">Error</p>
+        <p>{uploadError}</p>
+      </div>
+      <button 
+        onClick={() => setUploadError('')}
+        className="ml-4 text-red-500 hover:text-red-700"
+      >
+        <X size={20} />
+      </button>
+    </div>
+  </div>
+)}
+
+{successMessage && (
+  <div className="fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 z-50">
+    <div className="flex justify-between items-start">
+      <div>
+        <p className="font-bold">Success</p>
+        <p>{successMessage}</p>
+      </div>
+      <button 
+        onClick={() => setSuccessMessage('')}
+        className="ml-4 text-green-500 hover:text-green-700"
+      >
+        <X size={20} />
+      </button>
+    </div>
+  </div>
+)}
                     </div>
                   )}
                 </div>
