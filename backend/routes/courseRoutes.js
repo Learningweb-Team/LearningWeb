@@ -8,8 +8,14 @@ import {
 } from '../controllers/adminController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import Course from '../models/Course.js';  // Import Course model
+import { getCourses, getCourseDetails } from '../controllers/courseController.js';
 
 const router = express.Router();
+
+// Public routes
+router.get('/', getCourses);
+router.get('/:courseId', getCourseDetails);
+
 
 // Admin profile route
 router.route('/profile')

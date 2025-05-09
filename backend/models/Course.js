@@ -7,6 +7,8 @@ const courseSchema = new mongoose.Schema({
   description: String,
   coverPhotoUrl: String,
   coverPhotoPublicId: String,
+  isPublished: { type: Boolean, default: false },
+  publishedAt: Date,
   modules: [{
     title: String,
     description: String,

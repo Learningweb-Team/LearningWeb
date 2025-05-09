@@ -179,11 +179,17 @@ const Admin = () => {
   };
 
 // In your Admin component - update handleUploadToCourses
+// Update the handleUploadToCourses function in Admin.jsx
 const handleUploadToCourses = async () => {
   try {
     setUploading(true);
     setUploadError('');
     setSuccessMessage('');
+
+    // Validate course title
+    if (!courseTitle.trim()) {
+      throw new Error('Course title is required');
+    }
 
     // Upload course cover photo
     let courseCoverPhoto = { url: '', publicId: '' };
@@ -198,10 +204,15 @@ const handleUploadToCourses = async () => {
 
     // Upload all module content
     const updatedModules = await Promise.all(modules.map(async (module) => {
+      // Validate module title
+      if (!module.title.trim()) {
+        throw new Error(`Module ${module.id} title is required`);
+      }
+
       // Upload module cover photo
       let moduleCoverPhoto = { url: '', publicId: '' };
       if (module.coverPhotoFile) {
-        const result = await uploadToCloudinary(module.coverPhotoFile, 'image');
+        const result = await uploadToCloudinary(module.coverPhotoFile, 'image', module.id);
         if (result) {
           moduleCoverPhoto = result;
         } else {
@@ -209,10 +220,14 @@ const handleUploadToCourses = async () => {
         }
       }
 
-      // Upload class videos
+      // Upload class videos and validate classes
       const updatedClasses = await Promise.all(module.classes.map(async (cls) => {
+        if (!cls.title.trim()) {
+          throw new Error(`Class title in module ${module.title} is required`);
+        }
+
         if (cls.videoFile) {
-          const result = await uploadToCloudinary(cls.videoFile, 'video');
+          const result = await uploadToCloudinary(cls.videoFile, 'video', module.id);
           if (!result) {
             throw new Error(`Failed to upload video for class ${cls.title}`);
           }
@@ -226,21 +241,21 @@ const handleUploadToCourses = async () => {
       }));
 
       return {
-        ...module,
+        title: module.title,
+        description: module.description,
         coverPhoto: moduleCoverPhoto,
-        classes: updatedClasses
+        classes: updatedClasses,
+        assignments: module.assignments || []
       };
     }));
 
     // Prepare final data
     const courseData = {
       title: courseTitle,
-      description: "Course description", // Should be dynamic
+      description: "Course description", // You should add a description field in your UI
       coverPhoto: courseCoverPhoto,
       modules: updatedModules
     };
-
-    console.log('Final data being sent:', courseData); // Debug log
 
     const response = await fetch('http://localhost:5000/api/admin/publish', {
       method: 'POST',
@@ -252,13 +267,16 @@ const handleUploadToCourses = async () => {
     });
 
     const data = await response.json();
-    console.log('Response from server:', data); // Debug log
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to save course to database');
+      throw new Error(data.message || 'Failed to publish course');
     }
 
-    setSuccessMessage('Course published and saved to database successfully!');
+    setSuccessMessage('Course published successfully!');
+    // Optionally reset form or redirect
+    // setCourseTitle('');
+    // setModules([]);
+    // setCoverPhoto({ file: null, url: '' });
   } catch (error) {
     console.error('Publishing error:', error);
     setUploadError(error.message);

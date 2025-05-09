@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js"; 
 import adminRoutes from './routes/adminRoutes.js';
 
+
 dotenv.config();
 
 // Configure Cloudinary

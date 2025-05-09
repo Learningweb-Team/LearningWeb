@@ -11,6 +11,7 @@ import Courses from "./pages/Courses";
 import Admin from "./components/admin"; // Updated import path
 import AdminProfile from "./pages/AdminProfile";
 
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const token = localStorage.getItem("token");
   const userRole = localStorage.getItem("role")?.toLowerCase();
@@ -42,6 +43,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/courses" element={<Courses />} />
+          
           
        
 
