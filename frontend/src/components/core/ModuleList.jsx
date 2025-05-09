@@ -1,7 +1,26 @@
 // src/components/ModuleList.jsx
 import React from 'react';
 
-const ModuleList = ({ modules = [], onVideoSelect, userProgress = { completedVideos: [] }, isAdmin }) => {
+const ModuleList = ({ 
+  modules = [], 
+  onVideoSelect, 
+  onModuleComplete,
+  userProgress = { completedModules: [] }, 
+  isAdmin 
+}) => {
+  const handleModuleComplete = (moduleId) => {
+    // Check if all videos in module are watched
+    const module = modules.find(m => m._id === moduleId);
+    if (module) {
+      const allVideosWatched = module.classes.every(cls => 
+        userProgress.completedVideos?.includes(cls._id)
+      );
+      if (allVideosWatched) {
+        onModuleComplete(moduleId);
+      }
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h3 className="text-xl font-semibold mb-4">Course Modules</h3>

@@ -1,4 +1,3 @@
-// src/pages/CourseDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -12,64 +11,144 @@ const CourseDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeVideo, setActiveVideo] = useState(null);
-  const [userProgress, setUserProgress] = useState({ completedVideos: [] });
+  const [userProgress, setUserProgress] = useState({ 
+    completedVideos: [], 
+    totalVideos: 0,
+    lastWatchedVideo: null
+  });
+
   const isAdmin = localStorage.getItem('role') === 'admin';
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
-    const fetchCourse = async () => {
+    const fetchCourseAndProgress = async () => {
       try {
         setLoading(true);
-        const config = {
-          headers: {}
-        };
         
-        // Add auth token if user is logged in (even if not admin)
-        const token = localStorage.getItem('token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-
-        const response = await axios.get(
+        // Fetch course data
+        const courseResponse = await axios.get(
           `http://localhost:5000/api/courses/${courseId}`,
-          config
+          token ? { headers: { Authorization: `Bearer ${token}` } } : {}
         );
 
-        // Handle different response structures
-        const courseData = response.data.data || response.data;
-        console.log('Received course data:', courseData);
-        
-        if (!courseData) {
-          throw new Error('Course data not found in response');
-        }
-
+        const courseData = courseResponse.data.data || courseResponse.data;
         setCourse(courseData);
-        
-        // Fetch progress for non-admin users
-        if (!isAdmin && token) {
+
+        // Calculate total videos
+        const totalVideos = courseData.modules?.reduce(
+          (sum, module) => sum + (module.classes?.length || 0), 0
+        );
+
+        // Initialize progress with totalVideos
+        setUserProgress(prev => ({
+          ...prev,
+          totalVideos
+        }));
+
+        // Fetch progress if user is logged in
+        if (token && !isAdmin) {
           try {
             const progressResponse = await axios.get(
               `http://localhost:5000/api/progress/${courseId}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
-            setUserProgress(progressResponse.data.data || progressResponse.data || {});
+
+            const progressData = progressResponse.data.data || progressResponse.data || {};
+            setUserProgress({
+              ...progressData,
+              totalVideos: progressData.totalVideos || totalVideos || 0
+            });
+
+            // Set last watched video if available
+            if (progressData.lastWatchedVideo?.videoId) {
+              const lastWatched = findVideoInCourse(
+                courseData, 
+                progressData.lastWatchedVideo.videoId
+              );
+              if (lastWatched) {
+                setActiveVideo(lastWatched);
+              }
+            }
           } catch (progressError) {
-            console.log('Progress fetch error, using empty progress', progressError);
-            setUserProgress({ completedVideos: [] });
+            console.log('Progress fetch error, initializing new progress', progressError);
+            // Initialize new progress record
+            await axios.post(
+              `http://localhost:5000/api/progress/${courseId}`,
+              {},
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setUserProgress({
+              completedVideos: [],
+              totalVideos,
+              lastWatchedVideo: null
+            });
           }
         }
       } catch (err) {
-        console.error('Course fetch error:', err);
-        const errorMessage = err.response?.data?.message || 
-                           err.message || 
-                           'Failed to load course details';
-        setError(errorMessage);
+        setError(err.response?.data?.message || err.message || 'Failed to load course');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCourse();
-  }, [courseId, isAdmin]);
+    fetchCourseAndProgress();
+  }, [courseId, token, isAdmin]);
+
+  const findVideoInCourse = (course, videoId) => {
+    for (const module of course.modules || []) {
+      for (const cls of module.classes || []) {
+        if (cls._id === videoId) {
+          return { ...cls, moduleId: module._id };
+        }
+      }
+    }
+    return null;
+  };
+
+  const handleVideoSelect = (video) => {
+    setActiveVideo(video);
+    
+    if (token && !isAdmin) {
+      setUserProgress(prev => ({
+        ...prev,
+        lastWatchedVideo: {
+          videoId: video._id,
+          moduleId: video.moduleId,
+          title: video.title,
+          timestamp: 0
+        }
+      }));
+    }
+  };
+
+  const handleModuleComplete = async (moduleId) => {
+  if (!token || isAdmin) return;
+
+  try {
+    await axios.post(
+      `http://localhost:5000/api/progress/${courseId}/complete-module`,
+      { moduleId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    // Update local state
+    setUserProgress(prev => ({
+      ...prev,
+      completedModules: [...new Set([...prev.completedModules, moduleId])]
+    }));
+  } catch (error) {
+    console.error('Error marking module as completed:', error);
+  }
+};
+
+  const handleVideoComplete = (videoId) => {
+    if (!token || isAdmin) return;
+
+    setUserProgress(prev => ({
+      ...prev,
+      completedVideos: [...new Set([...prev.completedVideos, videoId])]
+    }));
+  };
 
   if (loading) return <div className="text-center py-8">Loading course...</div>;
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
@@ -95,12 +174,18 @@ const CourseDetail = () => {
         <div className="lg:w-2/3">
           {activeVideo ? (
             <VideoPlayer 
-              videoUrl={activeVideo.videoUrl} 
+              videoUrl={activeVideo.videoUrl}
+              videoId={activeVideo._id}
+              courseId={courseId}
               isAdmin={isAdmin}
+              onVideoComplete={handleVideoComplete}
             />
           ) : (
             <div className="bg-gray-100 rounded-lg p-8 text-center">
-              <p>Select a video to start watching</p>
+              <p>{userProgress.lastWatchedVideo ? 
+                'Continue watching your last video' : 
+                'Select a video to start watching'}
+              </p>
             </div>
           )}
           
@@ -114,12 +199,13 @@ const CourseDetail = () => {
 
         {/* Sidebar - Modules */}
         <div className="lg:w-1/3">
-          <ModuleList 
-            modules={course.modules || []}
-            onVideoSelect={setActiveVideo}
-            userProgress={userProgress}
-            isAdmin={isAdmin}
-          />
+        <ModuleList 
+  modules={course.modules || []}
+  onVideoSelect={handleVideoSelect}
+  onModuleComplete={handleModuleComplete}
+  userProgress={userProgress}
+  isAdmin={isAdmin}
+/>
         </div>
       </div>
     </div>
