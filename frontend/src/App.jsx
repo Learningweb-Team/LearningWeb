@@ -5,7 +5,7 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import AdminDashboard from "./pages/AdminProfile";
+import CourseDetail from './pages/CourseDetail';
 import UserDashboard from "./pages/UserDashboard";
 import Courses from "./pages/Courses";
 import Admin from "./components/admin"; // Updated import path
@@ -43,6 +43,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/courses" element={<Courses />} />
+          <Route path="/course/:courseId" element={<CourseDetail />} />
           
           
        
