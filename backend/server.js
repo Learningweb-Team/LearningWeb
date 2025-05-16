@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js"; 
 import adminRoutes from './routes/adminRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 
 dotenv.config();
@@ -60,6 +61,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/courses", courseRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/users', userRoutes);
 
 
 // Cloudinary Upload Route

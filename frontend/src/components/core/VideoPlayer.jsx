@@ -1,59 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const VideoPlayer = ({ videoUrl, videoId, courseId, isAdmin, onVideoComplete }) => {
+const VideoPlayer = ({ 
+  videoUrl, 
+  videoId, 
+  courseId, 
+  isAdmin, 
+  onVideoComplete
+}) => {
   const videoRef = useRef(null);
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
   const token = localStorage.getItem('token');
-
-
-   // Check if video is already completed
-   useEffect(() => {
-    if (!token || isAdmin) return;
-    
-    const checkCompletion = async () => {
-      try {
-        const response = await axios.get(
-          `http://localhost:5000/api/progress/${courseId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const progressData = response.data.data || response.data;
-        setIsCompleted(progressData.completedVideos?.includes(videoId) || false);
-      } catch (error) {
-        console.error('Error checking completion status:', error);
-      }
-    };
-    
-    checkCompletion();
-  }, [videoId, courseId, token, isAdmin]);
-
-  // Track video progress
-  useEffect(() => {
-    if (!videoRef.current || isAdmin) return;
-
-    const handleTimeUpdate = () => {
-      const video = videoRef.current;
-      const currentProgress = (video.currentTime / video.duration) * 100;
-      setProgress(currentProgress);
-
-      // Auto-mark as completed if watched 90% of video
-      if (currentProgress >= 90 && !isCompleted) {
-        markAsCompleted();
-      }
-
-      // Update last watched position
-      updateWatchProgress(video.currentTime);
-    };
-
-    const video = videoRef.current;
-    video.addEventListener('timeupdate', handleTimeUpdate);
-
-    return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-    };
-  }, [videoUrl, isCompleted, isAdmin]);
 
   const updateWatchProgress = async (currentTime) => {
     if (!token || isTracking) return;
@@ -91,19 +50,67 @@ const VideoPlayer = ({ videoUrl, videoId, courseId, isAdmin, onVideoComplete }) 
     }
   };
 
+  useEffect(() => {
+    if (!token || isAdmin) return;
+    
+    const checkCompletion = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/api/progress/${courseId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const progressData = response.data.data || response.data;
+        setIsCompleted(progressData.completedVideos?.includes(videoId) || false);
+      } catch (error) {
+        console.error('Error checking completion:', error);
+      }
+    };
+    
+    checkCompletion();
+  }, [videoId, courseId, token, isAdmin]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      const currentProgress = (video.currentTime / video.duration) * 100;
+      setProgress(currentProgress);
+
+      if (currentProgress >= 100 && !isCompleted) {
+        markAsCompleted();
+      }
+
+      updateWatchProgress(video.currentTime);
+    };
+
+    const handleEnded = () => {
+      if (onVideoComplete) onVideoComplete(videoId);
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('ended', handleEnded);
+    };
+  }, [videoUrl, isCompleted, isAdmin, onVideoComplete, videoId]);
+
   return (
     <div className="mb-8">
-      <div className="aspect-w-16 aspect-h-9 bg-black rounded-lg overflow-hidden">
+      <div className="aspect-w-16 aspect-h-9 bg-black rounded-lg overflow-hidden relative">
         {videoUrl ? (
           <video
             ref={videoRef}
             controls
             className="w-full"
-            autoPlay={!isAdmin} // Autoplay for students
+            playsInline
             controlsList={isAdmin ? "nodownload" : ""}
+            key={videoId}
           >
             <source src={videoUrl} type="video/mp4" />
-            Your browser does not support the video tag.
+            Your browser doesn't support HTML5 video.
           </video>
         ) : (
           <div className="flex items-center justify-center h-full text-white">

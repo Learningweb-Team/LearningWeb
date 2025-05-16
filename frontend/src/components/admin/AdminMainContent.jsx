@@ -16,6 +16,7 @@ const AdminMainContent = ({
   removeCoverPhoto,
   uploading,
   uploadError,
+  handlePublish,
   successMessage
 }) => {
   const [videoPreview, setVideoPreview] = useState(null);
@@ -23,6 +24,7 @@ const AdminMainContent = ({
   const [editingCourseTitle, setEditingCourseTitle] = useState(false);
   const [tempCourseTitle, setTempCourseTitle] = useState(courseTitle);
   const [courseDescription, setCourseDescription] = useState('Master digital marketing with this comprehensive course');
+  
   
   const activeModule = modules.find(module => module.id === activeModuleId);
 
@@ -309,13 +311,7 @@ const AdminMainContent = ({
     ));
   };
 
-  const handlePublish = async () => {
-    await onUploadToCourses();
-    if (!uploadError) {
-      setShowSuccessModal(true);
-      setTimeout(() => setShowSuccessModal(false), 3000);
-    }
-  };
+
 
   return (
     <div className="flex-1 p-6 max-w-4xl mx-auto space-y-6">

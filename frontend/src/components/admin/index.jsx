@@ -87,38 +87,71 @@ const Admin = () => {
     }
   };
 
-  const handleVideoUpload = (moduleId, classId, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+const handleVideoUpload = async (moduleId, classId, e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    setUploadError('');
-    setSuccessMessage('');
+  setUploading(true);
+  setUploadError('');
 
+  try {
+    // Validate file type and size
     const validTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
     if (!validTypes.includes(file.type)) {
-      setUploadError('Please upload a valid video file (MP4, WebM, or QuickTime)');
-      return;
+      throw new Error('Please upload a valid video file (MP4, WebM, or QuickTime)');
     }
 
-    const maxSize = 100 * 1024 * 1024;
+    const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
-      setUploadError('Video file is too large (max 100MB)');
-      return;
+      throw new Error('Video file is too large (max 100MB)');
     }
 
+    // Create preview URL for immediate display
+    const previewUrl = URL.createObjectURL(file);
+
+    // Upload to Cloudinary
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+    formData.append('api_key', import.meta.env.VITE_CLOUDINARY_API_KEY);
+    formData.append('resource_type', 'video');
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/video/upload`,
+      { method: 'POST', body: formData }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Upload failed');
+    }
+
+    const data = await response.json();
+
+    // Update state with both preview and Cloudinary URLs
     setModules(prevModules => prevModules.map(module => 
       module.id === moduleId ? {
         ...module,
         classes: module.classes.map(cls => 
           cls.id === classId ? { 
             ...cls, 
-            videoFile: file,
-            videoUrl: URL.createObjectURL(file)
+            videoUrl: data.secure_url, // Cloudinary URL
+            previewUrl, // Local preview URL
+            publicId: data.public_id,
+            duration: data.duration,
+            videoFile: undefined // Clear file object
           } : cls
         )
       } : module
     ));
-  };
+
+  } catch (error) {
+    console.error('Video upload error:', error);
+    setUploadError(error.message);
+  } finally {
+    setUploading(false);
+  }
+};
 
   const removeVideo = (moduleId, classId) => {
     setModules(prevModules => prevModules.map(module => 
@@ -257,6 +290,75 @@ const Admin = () => {
         : module
     ));
   };
+  const handlePublish = async () => {
+  setUploading(true);
+  setUploadError('');
+  setSuccessMessage('');
+
+  try {
+    // First upload cover photo if needed
+    let coverPhotoUrl = coverPhoto.url;
+    let coverPhotoPublicId = coverPhoto.publicId;
+    
+    if (coverPhoto.file && !coverPhoto.isUploaded) {
+      const result = await uploadToCloudinary(coverPhoto.file, 'image');
+      coverPhotoUrl = result.url;
+      coverPhotoPublicId = result.publicId;
+    }
+
+    // Prepare course data
+    const courseData = {
+      title: courseTitle,
+      description: "Course description",
+      coverPhoto: {
+        url: coverPhotoUrl,
+        publicId: coverPhotoPublicId
+      },
+      modules: modules.map(module => ({
+        title: module.title,
+        description: module.description,
+        classes: module.classes.map(cls => ({
+          title: cls.title,
+          week: cls.week,
+          description: cls.description,
+          videoUrl: cls.videoUrl,
+          publicId: cls.publicId,
+          duration: cls.duration || 0
+        })),
+        assignments: module.assignments
+      }))
+    };
+
+    // Send to backend
+    const response = await fetch('http://localhost:5000/api/admin/publish', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(courseData)
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to publish course');
+
+    setSuccessMessage('Course published successfully!');
+    
+  } catch (error) {
+    console.error('Publishing error:', error);
+    setUploadError(error.message);
+  } finally {
+    setUploading(false);
+  }
+};
+
+
+
+
+
+
+
+
 
   return (
     <div 
@@ -351,6 +453,7 @@ const Admin = () => {
             videoPreview={videoPreview}
             setVideoPreview={setVideoPreview}
             addNewClass={addNewClass}
+            handlePublish={handlePublish}
           />
         </div>
       </div>
