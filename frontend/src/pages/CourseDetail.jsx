@@ -7,7 +7,12 @@ import ModuleList from '../components/core/ModuleList';
 
 const CourseDetail = () => {
   const { courseId } = useParams();
-  const [course, setCourse] = useState({ modules: [] });
+  const [course, setCourse] = useState({ 
+    title: '',
+    description: 'No description available',
+    coverPhotoUrl: '',
+    modules: [] 
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeVideo, setActiveVideo] = useState(null);
@@ -15,6 +20,7 @@ const CourseDetail = () => {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [userProgress, setUserProgress] = useState({ 
     completedVideos: [], 
+    completedModules: [],
     totalVideos: 0,
     lastWatchedVideo: null,
     isEnrolled: false
@@ -54,13 +60,11 @@ const CourseDetail = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Update enrollment status
       setUserProgress(prev => ({
         ...prev,
         isEnrolled: true
       }));
 
-      // Start with first video and autoplay
       if (videoQueue.length > 0) {
         const firstVideo = {
           ...videoQueue[0],
@@ -69,7 +73,6 @@ const CourseDetail = () => {
         setActiveVideo(firstVideo);
         setCurrentVideoIndex(0);
         
-        // Update last watched video in backend
         await axios.put(
           `http://localhost:5000/api/progress/${courseId}/watch`,
           { 
@@ -79,7 +82,6 @@ const CourseDetail = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        // Update local state
         setUserProgress(prev => ({
           ...prev,
           lastWatchedVideo: {
@@ -101,20 +103,17 @@ const CourseDetail = () => {
     if (!token || isAdmin) return;
 
     try {
-      // Mark video as completed in backend
       await axios.post(
         `http://localhost:5000/api/progress/${courseId}/complete`,
         { videoId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Update local state
       setUserProgress(prev => ({
         ...prev,
         completedVideos: [...new Set([...prev.completedVideos, videoId])]
       }));
 
-      // Check if there's a next video
       if (currentVideoIndex < videoQueue.length - 1) {
         const nextVideo = videoQueue[currentVideoIndex + 1];
         setNextVideo(nextVideo);
@@ -125,7 +124,7 @@ const CourseDetail = () => {
     }
   };
 
-  // Handle when user confirms to watch next video
+  // Handle next video confirmation
   const handleConfirmNextVideo = async () => {
     const nextVideoToPlay = {
       ...nextVideo,
@@ -137,7 +136,6 @@ const CourseDetail = () => {
     setShowNextVideoPrompt(false);
     setNextVideo(null);
 
-    // Update last watched video in backend
     if (token && !isAdmin) {
       try {
         await axios.put(
@@ -164,13 +162,11 @@ const CourseDetail = () => {
     }
   };
 
-  // Handle when user declines to watch next video
   const handleDeclineNextVideo = () => {
     setShowNextVideoPrompt(false);
     setNextVideo(null);
   };
 
-  // Handle module completion
   const handleModuleComplete = async (moduleId) => {
     if (!token || isAdmin) return;
 
@@ -201,11 +197,35 @@ const CourseDetail = () => {
           token ? { headers: { Authorization: `Bearer ${token}` } } : {}
         );
 
-        const courseData = courseResponse.data.data || courseResponse.data;
-        setCourse(courseData);
+        console.log('Raw API response:', courseResponse.data); // Add this line
+
+        // Handle both response structures and ensure description exists
+        const apiData = courseResponse.data;
+const courseData = apiData.data || apiData; // Handle both response formats
+        
+        
+        // Transform data with fallbacks
+        const completeCourseData = {
+          ...courseData,
+          title: courseData.title || 'Untitled Course',
+          description: courseData.description || 'No description available (explicit)',
+          coverPhotoUrl: courseData.coverPhotoUrl || '',
+          modules: courseData.modules?.map(module => ({
+            ...module,
+            title: module.title || 'Untitled Module',
+            description: module.description || 'No module description',
+            classes: module.classes?.map(cls => ({
+              ...cls,
+              title: cls.title || 'Untitled Lesson',
+              description: cls.description || 'No lesson description'
+            })) || []
+          })) || []
+        };
+
+        setCourse(completeCourseData);
 
         // Create video queue in order
-        const allVideos = getAllVideosInOrder(courseData);
+        const allVideos = getAllVideosInOrder(completeCourseData);
         setVideoQueue(allVideos);
 
         // Calculate total videos
@@ -214,12 +234,10 @@ const CourseDetail = () => {
         // Fetch progress if user is logged in
         if (token && !isAdmin) {
           try {
-            // Check enrollment status with fallback
             let isEnrolled = false;
             let progressData = {};
             
             try {
-              // First try the enrollment status endpoint
               const enrollStatus = await axios.get(
                 `http://localhost:5000/api/users/enrollment-status/${courseId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -228,7 +246,6 @@ const CourseDetail = () => {
               progressData = enrollStatus.data || {};
             } catch (error) {
               if (error.response?.status === 404) {
-                // Fallback to progress check if endpoint not found
                 const progressResponse = await axios.get(
                   `http://localhost:5000/api/progress/${courseId}`,
                   { headers: { Authorization: `Bearer ${token}` } }
@@ -290,7 +307,6 @@ const CourseDetail = () => {
             }));
           }
         } else {
-          // For non-logged in users or admins
           setUserProgress(prev => ({
             ...prev,
             totalVideos,
@@ -306,6 +322,7 @@ const CourseDetail = () => {
           }
         }
       } catch (err) {
+        console.error('Course fetch error:', err);
         setError(err.response?.data?.message || err.message || 'Failed to load course');
       } finally {
         setLoading(false);
@@ -319,7 +336,6 @@ const CourseDetail = () => {
     if (userProgress.isEnrolled || isAdmin) {
       const videoIndex = videoQueue.findIndex(v => v._id === video._id);
       
-      // Check if all previous videos are completed (unless admin)
       const allPreviousCompleted = isAdmin || videoQueue.slice(0, videoIndex).every(v => 
         userProgress.completedVideos?.includes(v._id)
       );
@@ -348,95 +364,101 @@ const CourseDetail = () => {
     }
   };
 
-  if (loading) return <div className="text-center py-8">Loading course...</div>;
+  if (loading) return <div className="text-center py-8 text-white">Loading course...</div>;
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
-  if (!course) return <div className="text-center py-8">Course not found</div>;
+  if (!course) return <div className="text-center py-8 text-white">Course not found</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Course Header */}
-      <div className="mb-8">
-        {course.coverPhotoUrl && (
-          <img 
-            src={course.coverPhotoUrl} 
-            alt={course.title}
-            className="w-full h-64 object-cover rounded-lg mb-4"
-          />
-        )}
-        <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
-        <p className="text-gray-600 mb-4">{course.description}</p>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Main Content - Video Player */}
-        <div className="lg:w-2/3">
-          {!userProgress.isEnrolled && !isAdmin ? (
-            <div className="bg-gray-100 rounded-lg p-8 text-center">
-              <h3 className="text-xl font-semibold mb-4">Enroll to access this course</h3>
-              <button
-                onClick={handleEnroll}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Enroll Now
-              </button>
-              {error && <p className="text-red-500 mt-2">{error}</p>}
-            </div>
-          ) : activeVideo ? (
-            <>
-              <VideoPlayer 
-                videoUrl={activeVideo.videoUrl}
-                videoId={activeVideo._id}
-                courseId={courseId}
-                isAdmin={isAdmin}
-                onVideoComplete={handleVideoComplete}
-                shouldAutoplay={activeVideo.shouldAutoplay}
-                key={activeVideo._id}
-              />
-              
-              {showNextVideoPrompt && (
-                <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <h4 className="font-medium mb-2">Continue to next video: {nextVideo?.title}</h4>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={handleConfirmNextVideo}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                    >
-                      Yes, Continue
-                    </button>
-                    <button 
-                      onClick={handleDeclineNextVideo}
-                      className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
-                    >
-                      No, Stay Here
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="bg-gray-100 rounded-lg p-8 text-center">
-              <p>No videos available in this course</p>
-            </div>
-          )}
-          
-          {!isAdmin && userProgress.isEnrolled && (
-            <CourseProgress 
-              progress={userProgress}
-              courseId={courseId}
+    <div className="relative min-h-screen overflow-hidden bg-gray-900 text-white">
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        {/* Course Header */}
+        <div className="mb-8">
+          {course.coverPhotoUrl && (
+            <img 
+              src={course.coverPhotoUrl} 
+              alt={course.title}
+              className="w-full h-64 object-cover rounded-lg mb-4"
             />
           )}
+          <div className="bg-gray-800 p-4 rounded-lg mb-4">
+    <h2 className="text-xl font-semibold mb-2">Course Description</h2>
+    <p className="text-gray-300 whitespace-pre-line">
+      {course.description || 'No description provided'}
+    </p>
+  </div>
         </div>
 
-        {/* Sidebar - Modules */}
-        <div className="lg:w-1/3">
-          <ModuleList 
-            modules={course.modules || []}
-            onVideoSelect={handleVideoSelect}
-            onModuleComplete={handleModuleComplete}
-            userProgress={userProgress}
-            isAdmin={isAdmin}
-            isEnrolled={userProgress.isEnrolled || isAdmin}
-          />
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main Content - Video Player */}
+          <div className="lg:w-2/3">
+            {!userProgress.isEnrolled && !isAdmin ? (
+              <div className="bg-gray-800 rounded-lg p-8 text-center">
+                <h3 className="text-xl font-semibold mb-4">Enroll to access this course</h3>
+                <button
+                  onClick={handleEnroll}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Enroll Now
+                </button>
+                {error && <p className="text-red-500 mt-2">{error}</p>}
+              </div>
+            ) : activeVideo ? (
+              <>
+                <VideoPlayer 
+                  videoUrl={activeVideo.videoUrl}
+                  videoId={activeVideo._id}
+                  courseId={courseId}
+                  isAdmin={isAdmin}
+                  onVideoComplete={handleVideoComplete}
+                  shouldAutoplay={activeVideo.shouldAutoplay}
+                  key={activeVideo._id}
+                />
+                
+                {showNextVideoPrompt && (
+                  <div className="bg-blue-900/50 p-4 rounded-lg mb-4">
+                    <h4 className="font-medium mb-2">Continue to next video: {nextVideo?.title}</h4>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={handleConfirmNextVideo}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Yes, Continue
+                      </button>
+                      <button 
+                        onClick={handleDeclineNextVideo}
+                        className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700 transition-colors"
+                      >
+                        No, Stay Here
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-gray-800 rounded-lg p-8 text-center">
+                <p>No videos available in this course</p>
+              </div>
+            )}
+            
+            {!isAdmin && userProgress.isEnrolled && (
+              <CourseProgress 
+                progress={userProgress}
+                courseId={courseId}
+              />
+            )}
+          </div>
+
+          {/* Sidebar - Modules */}
+          <div className="lg:w-1/3">
+            <ModuleList 
+              modules={course.modules || []}
+              onVideoSelect={handleVideoSelect}
+              onModuleComplete={handleModuleComplete}
+              userProgress={userProgress}
+              isAdmin={isAdmin}
+              isEnrolled={userProgress.isEnrolled || isAdmin}
+            />
+          </div>
         </div>
       </div>
     </div>

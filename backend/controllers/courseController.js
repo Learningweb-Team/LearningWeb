@@ -39,6 +39,8 @@ export const getCourseDetails = async (req, res) => {
       .select('title description coverPhotoUrl modules isPublished')
       .lean();
 
+      console.log('Course data from DB:', course); // Add this line
+
     if (!course) {
       console.log('Course not found');
       return res.status(404).json({
@@ -46,6 +48,8 @@ export const getCourseDetails = async (req, res) => {
         message: 'Course not found'
       });
     }
+
+    
 
     // Check if course is published (for non-admin users)
     if (!course.isPublished && (!req.user || req.user.role !== 'admin')) {

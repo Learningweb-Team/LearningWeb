@@ -4,6 +4,8 @@ import { Upload, Video, Image, Plus, Trash2, X, Eye, Edit, Check } from 'lucide-
 const AdminMainContent = ({
   courseTitle,
   setCourseTitle,
+  courseDescription,           // Added prop
+  setCourseDescription,        // Added prop
   modules,
   setModules,
   activeModuleId,
@@ -23,10 +25,27 @@ const AdminMainContent = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [editingCourseTitle, setEditingCourseTitle] = useState(false);
   const [tempCourseTitle, setTempCourseTitle] = useState(courseTitle);
-  const [courseDescription, setCourseDescription] = useState('Master digital marketing with this comprehensive course');
-  
+  const [editingCourseDescription, setEditingCourseDescription] = useState(false);
+  const [tempCourseDescription, setTempCourseDescription] = useState(courseDescription || '');
   
   const activeModule = modules.find(module => module.id === activeModuleId);
+
+  // Update course description
+  const updateCourseDescription = () => {
+    setCourseDescription(tempCourseDescription);
+    setEditingCourseDescription(false);
+  };
+
+  // Handle publish with description
+  const handlePublishWithDescription = () => {
+    console.log('Publishing with description:', courseDescription);
+    handlePublish({
+      title: courseTitle,
+      description: courseDescription,
+      coverPhoto,
+      modules
+    });
+  };
 
   // Toggle edit mode for various fields
   const toggleEdit = (field, moduleId = null, classId = null, assignmentId = null) => {
@@ -34,6 +53,14 @@ const AdminMainContent = ({
       setEditingCourseTitle(!editingCourseTitle);
       if (editingCourseTitle) {
         setCourseTitle(tempCourseTitle);
+      }
+      return;
+    }
+
+    if (field === 'courseDescription') {
+      setEditingCourseDescription(!editingCourseDescription);
+      if (editingCourseDescription) {
+        setCourseDescription(tempCourseDescription);
       }
       return;
     }
@@ -113,6 +140,11 @@ const AdminMainContent = ({
       return;
     }
 
+    if (field === 'courseDescription') {
+      setTempCourseDescription(value);
+      return;
+    }
+
     setModules(modules.map(module => {
       if (moduleId && module.id !== moduleId) return module;
       
@@ -160,6 +192,12 @@ const AdminMainContent = ({
     if (field === 'courseTitle') {
       setCourseTitle(tempCourseTitle);
       setEditingCourseTitle(false);
+      return;
+    }
+
+    if (field === 'courseDescription') {
+      setCourseDescription(tempCourseDescription);
+      setEditingCourseDescription(false);
       return;
     }
 
@@ -311,8 +349,6 @@ const AdminMainContent = ({
     ));
   };
 
-
-
   return (
     <div className="flex-1 p-6 max-w-4xl mx-auto space-y-6">
       {/* Course Header */}
@@ -346,13 +382,45 @@ const AdminMainContent = ({
         )}
         
         <div className="flex items-start">
-          <p className="text-gray-600 flex-1">{courseDescription}</p>
-          <button className="ml-2 p-1 text-blue-500 hover:text-blue-700">
-            <Edit size={16} />
-          </button>
+          {editingCourseDescription ? (
+            <div className="flex-1">
+              <textarea
+                value={tempCourseDescription}
+                onChange={(e) => updateField('courseDescription', e.target.value)}
+                className="w-full p-2 border rounded text-gray-600"
+                rows="3"
+                autoFocus
+              />
+              <div className="flex justify-end mt-2 space-x-2">
+                <button
+                  onClick={() => setEditingCourseDescription(false)}
+                  className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={updateCourseDescription}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-gray-600 flex-1">{courseDescription || 'No description provided'}</p>
+              <button
+                onClick={() => setEditingCourseDescription(true)}
+                className="ml-2 p-1 text-blue-500 hover:text-blue-700"
+              >
+                <Edit size={16} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
+      {/* Rest of the component remains the same */}
       {/* Cover Photo */}
       <div className="bg-white rounded-xl p-6 shadow border">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Cover Photo</h2>
@@ -656,7 +724,7 @@ const AdminMainContent = ({
       {/* Publish Button */}
       <div className="flex justify-center">
         <button
-          onClick={handlePublish}
+          onClick={handlePublishWithDescription}  // Changed to use the new publish handler
           disabled={uploading}
           className={`px-6 py-2 rounded-lg shadow ${
             uploading 

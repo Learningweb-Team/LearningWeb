@@ -251,6 +251,14 @@ export const publishCourse = async (req, res) => {
       });
     }
 
+    console.log('Received description:', description);
+if (!description || typeof description !== 'string') {
+  return res.status(400).json({
+    success: false,
+    message: 'Invalid description format'
+  });
+}
+
     // Create and save course
     const course = new Course({
       title: title.trim(),

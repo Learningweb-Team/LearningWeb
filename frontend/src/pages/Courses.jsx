@@ -1,4 +1,3 @@
-// src/pages/Courses.jsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -11,38 +10,39 @@ const Courses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
 
-// In your Courses.jsx component
-// src/pages/Courses.jsx
-// src/pages/Courses.jsx
-useEffect(() => {
-  const fetchCourses = async () => {
-    try {
-      setLoading(true);
-      console.log('Fetching courses from API...');
-      const response = await axios.get("http://localhost:5000/api/courses");
-      
-      console.log('API response:', response);
-      
-      // Handle different response structures
-      const coursesData = response.data.data || response.data;
-      
-      if (!Array.isArray(coursesData)) {
-        throw new Error('Invalid courses data format');
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("http://localhost:5000/api/courses");
+        
+        // Handle different response structures
+        const coursesData = response.data.data || response.data;
+        
+        if (!Array.isArray(coursesData)) {
+          throw new Error('Invalid courses data format');
+        }
+        
+        // Ensure each course has a description field
+        const coursesWithDescription = coursesData.map(course => ({
+          ...course,
+          description: course.description || "No description available"
+        }));
+        
+        setCourses(coursesWithDescription);
+        setError('');
+      } catch (err) {
+        console.error("Course fetch error:", err);
+        setError(err.response?.data?.message || err.message || "Failed to load courses");
+        setCourses([]);
+      } finally {
+        setLoading(false);
       }
-      
-      setCourses(coursesData);
-      setError('');
-    } catch (err) {
-      console.error("Course fetch error:", err);
-      setError(err.response?.data?.message || err.message || "Failed to load courses");
-      setCourses([]); // Reset courses on error
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchCourses();
-}, []);
+    fetchCourses();
+  }, []);
+
   const filteredCourses = courses.filter(course => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,7 +93,7 @@ useEffect(() => {
             {filteredCourses.map((course) => (
               <div
                 key={course._id}
-                className="bg-gray-800/80 border border-gray-700 rounded-lg shadow-lg p-6 backdrop-blur-md"
+                className="bg-gray-800/80 border border-gray-700 rounded-lg shadow-lg p-6 backdrop-blur-md hover:shadow-xl transition-shadow"
               >
                 {course.coverPhotoUrl && (
                   <img
@@ -103,8 +103,8 @@ useEffect(() => {
                   />
                 )}
                 <h2 className="text-2xl font-semibold mb-2">{course.title}</h2>
-                <p className="text-gray-300 line-clamp-2 mb-4">
-                  {course.description || "No description available"}
+                <p className="text-gray-300 line-clamp-3 mb-4 min-h-[60px]">
+                  {course.description}
                 </p>
 
                 <div className="flex justify-between items-center">

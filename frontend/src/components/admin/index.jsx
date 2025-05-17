@@ -28,6 +28,7 @@ const Admin = () => {
   ]);
 
   const [courseTitle, setCourseTitle] = useState('Digital Marketing Masterclass');
+  const [courseDescription, setCourseDescription] = useState('Course description');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -214,7 +215,7 @@ const handleVideoUpload = async (moduleId, classId, e) => {
 
       const courseData = {
         title: courseTitle,
-        description: "Course description",
+        description: courseDescription,
         coverPhoto: uploadResult,
         modules: modules.map(module => ({
           title: module.title,
@@ -309,7 +310,7 @@ const handleVideoUpload = async (moduleId, classId, e) => {
     // Prepare course data
     const courseData = {
       title: courseTitle,
-      description: "Course description",
+      description: courseDescription,
       coverPhoto: {
         url: coverPhotoUrl,
         publicId: coverPhotoPublicId
@@ -454,6 +455,8 @@ const handleVideoUpload = async (moduleId, classId, e) => {
             setVideoPreview={setVideoPreview}
             addNewClass={addNewClass}
             handlePublish={handlePublish}
+            courseDescription={courseDescription}
+            setCourseDescription={setCourseDescription}
           />
         </div>
       </div>
