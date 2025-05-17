@@ -29,8 +29,8 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Secure CORS Configuration
 app.use(cors({

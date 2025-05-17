@@ -183,7 +183,7 @@ const handleVideoUpload = async (moduleId, classId, e) => {
       return;
     }
   
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       setUploadError('Image file is too large (max 5MB)');
       return;

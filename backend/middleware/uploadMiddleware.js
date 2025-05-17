@@ -33,7 +33,7 @@ const imageUpload = multer({
       transformation: [{ width: 1200, height: 630, crop: 'fill', quality: 'auto' }]
     })
   }),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
     if (validTypes.includes(file.mimetype)) cb(null, true);

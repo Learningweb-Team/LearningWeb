@@ -10,6 +10,7 @@ import UserDashboard from "./pages/UserDashboard";
 import Courses from "./pages/Courses";
 import Admin from "./components/admin"; // Updated import path
 import AdminProfile from "./pages/AdminProfile";
+import MyCourses from "./components/core/MyCourses";
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -44,6 +45,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/course/:courseId" element={<CourseDetail />} />
+          <Route path="/my-courses" element={<MyCourses />} />
           
           
        

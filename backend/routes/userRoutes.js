@@ -10,6 +10,33 @@ const router = express.Router();
  * @desc Check if user is enrolled in a course and get progress
  * @access Private
  */
+
+// Get user's enrolled courses with progress
+router.get('/my-courses', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate({
+        path: 'courses.course',
+        populate: {
+          path: 'modules',
+          populate: {
+            path: 'classes'
+          }
+        }
+      });
+
+    const courses = user.courses.map(uc => ({
+      ...uc.course.toObject(),
+      progress: uc.progress
+    }));
+
+    res.json({ courses });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
 router.get('/enrollment-status/:courseId', protect, async (req, res) => {
   try {
     const progress = await Progress.findOne({
