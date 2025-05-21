@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { Boxes } from "../components/Boxes";
+import DigitalSchoolLoader from "../components/DigitalSchoolLoader";
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
@@ -58,7 +59,7 @@ const Courses = () => {
     return matchesSearch;
   });
 
-  if (loading) return <div className="text-center py-8 text-white">Loading courses...</div>;
+  if (loading) return <DigitalSchoolLoader />;
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
 
   return (

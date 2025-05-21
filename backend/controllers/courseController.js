@@ -14,7 +14,7 @@ export const getCourses = async (req, res) => {
 
     console.log(`Found ${courses.length} published courses`);
     
-    res.status(200).json({
+    res.status(200).json(courses);({
       success: true,
       data: courses // Changed from data: courses to match frontend expectation
     });
@@ -72,7 +72,7 @@ export const getCourseDetails = async (req, res) => {
     }
 
     console.log('Sending course data:', responseData);
-    res.status(200).json({
+    res.status(200).json(responseData);({
       success: true,
       data: responseData
     });
@@ -85,4 +85,6 @@ export const getCourseDetails = async (req, res) => {
     });
   }
 };
+
+
 

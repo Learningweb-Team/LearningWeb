@@ -121,16 +121,20 @@ const Navbar = () => {
                       onClick={() => setShowProfileDropdown(false)}
                     >
                       <User size={16} className="mr-2" />
-                      My Dashboard
+                      {role === "admin" ? "Admin Dashboard" : "My Dashboard"}
                     </Link>
-                    <Link
-                      to="/my-courses"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={() => setShowProfileDropdown(false)}
-                    >
-                      <BookOpen size={16} className="mr-2" />
-                      My Courses ({userData?.coursesEnrolled || 0})
-                    </Link>
+                    
+                    {role !== "admin" && (
+                      <Link
+                        to="/my-courses"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        <BookOpen size={16} className="mr-2" />
+                        My Courses ({userData?.coursesEnrolled || 0})
+                      </Link>
+                    )}
+                    
                     <Link
                       to="/settings"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -203,15 +207,19 @@ const Navbar = () => {
                 className="block py-2 px-2 rounded bg-black/30 hover:bg-blue-700/70 transition-colors mb-2"
                 onClick={() => setIsOpen(false)}
               >
-                My Dashboard
+                {role === "admin" ? "Admin Dashboard" : "My Dashboard"}
               </Link>
-              <Link
-                to="/my-courses"
-                className="block py-2 px-2 rounded bg-black/30 hover:bg-blue-700/70 transition-colors mb-2"
-                onClick={() => setIsOpen(false)}
-              >
-                My Courses ({userData?.coursesEnrolled || 0})
-              </Link>
+              
+              {role !== "admin" && (
+                <Link
+                  to="/my-courses"
+                  className="block py-2 px-2 rounded bg-black/30 hover:bg-blue-700/70 transition-colors mb-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  My Courses ({userData?.coursesEnrolled || 0})
+                </Link>
+              )}
+              
               <Link
                 to="/settings"
                 className="block py-2 px-2 rounded bg-black/30 hover:bg-blue-700/70 transition-colors mb-2"

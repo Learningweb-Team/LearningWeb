@@ -1,41 +1,69 @@
-// server/routes/userRoutes.js
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
+import User from '../models/User.js';
 import Progress from '../models/Progress.js';
+import Course from '../models/Course.js'; // Add this import
 
 const router = express.Router();
 
-/**
- * @route GET /api/users/enrollment-status/:courseId
- * @desc Check if user is enrolled in a course and get progress
- * @access Private
- */
-
-// Get user's enrolled courses with progress
-router.get('/my-courses', auth, async (req, res) => {
+// GET /api/users/my-courses - Get enrolled courses with progress
+// Updated /api/users/my-courses route
+router.get('/my-courses', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
+    const progressRecords = await Progress.find({ userId: req.user._id })
       .populate({
-        path: 'courses.course',
+        path: 'courseId',
+        select: 'title coverPhotoUrl description',
         populate: {
           path: 'modules',
+          select: 'title',
           populate: {
-            path: 'classes'
+            path: 'classes',
+            select: 'title duration _id' // Make sure to include _id
           }
         }
       });
 
-    const courses = user.courses.map(uc => ({
-      ...uc.course.toObject(),
-      progress: uc.progress
+    if (!progressRecords.length) {
+      return res.json({ courses: [] });
+    }
+
+    const formattedCourses = await Promise.all(progressRecords.map(async (progress) => {
+      const course = progress.courseId;
+      
+      // Calculate total videos in course
+      const totalVideos = course.modules.reduce(
+        (total, module) => total + (module.classes?.length || 0), 
+        0
+      );
+      
+      // Calculate actual progress percentage
+      const completedVideos = progress.completedVideos?.length || 0;
+      const percentage = totalVideos > 0 
+        ? Math.round((completedVideos / totalVideos) * 100)
+        : 0;
+
+      return {
+        _id: course._id,
+        title: course.title,
+        coverPhotoUrl: course.coverPhotoUrl,
+        description: course.description,
+        progress: percentage,
+        totalLessons: totalVideos,
+        modules: course.modules.map(module => ({
+          title: module.title,
+          lessons: module.classes?.length || 0
+        }))
+      };
     }));
 
-    res.json({ courses });
+    res.json({ courses: formattedCourses });
   } catch (err) {
+    console.error('Error fetching enrolled courses:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
-
+// ... (keep your existing /enrollment-status and /enroll routes)
 
 router.get('/enrollment-status/:courseId', protect, async (req, res) => {
   try {

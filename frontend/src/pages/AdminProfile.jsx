@@ -1,6 +1,7 @@
 // AdminDashboard.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import DigitalSchoolLoader from "../components/DigitalSchoolLoader";
 
 const AdminProfile = () => {
   const [admin, setAdmin] = useState(null);
@@ -45,13 +46,8 @@ const AdminProfile = () => {
     navigate("/login");
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  if (loading) return <DigitalSchoolLoader />;
+  if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
 
   if (error) {
     return (

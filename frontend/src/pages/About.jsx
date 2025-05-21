@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import aboutimg from '../assets/bg_img/aboutimg.jpg';
 import { FaChevronDown, FaChevronUp, FaGraduationCap, FaGlobe, FaUsers, FaChartLine } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import DigitalSchoolLoader from "../components/DigitalSchoolLoader";
+
 
 const About = () => {
   const [expandedItem, setExpandedItem] = useState(null);
@@ -18,6 +20,8 @@ const About = () => {
   const handleSignup = () => {
     navigate('/signup');
   };
+
+  
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">

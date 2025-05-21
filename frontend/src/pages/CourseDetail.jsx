@@ -4,6 +4,7 @@ import axios from 'axios';
 import VideoPlayer from '../components/core/VideoPlayer';
 import CourseProgress from '../components/core/CourseProgress';
 import ModuleList from '../components/core/ModuleList';
+import DigitalSchoolLoader from "../components/DigitalSchoolLoader";
 
 const CourseDetail = () => {
   const { courseId } = useParams();
@@ -364,9 +365,8 @@ const courseData = apiData.data || apiData; // Handle both response formats
     }
   };
 
-  if (loading) return <div className="text-center py-8 text-white">Loading course...</div>;
+  if (loading) return <DigitalSchoolLoader />;
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
-  if (!course) return <div className="text-center py-8 text-white">Course not found</div>;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gray-900 text-white">
