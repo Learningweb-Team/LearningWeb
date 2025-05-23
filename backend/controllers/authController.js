@@ -34,14 +34,14 @@ export const signup = async (req, res) => {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    //const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user (default role is 'student')
     const newUser = new User({
       firstName,
       lastName,
       email,
-      password: hashedPassword,
+      password,
       phoneNumber,
       image,
       role: "user" // Default role
@@ -78,7 +78,6 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate
     if (!email || !password) {
       return res.status(400).json({ 
         success: false,
@@ -86,8 +85,11 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    const user = await User.findOne({ email });
+    // Case-insensitive email search
+    const user = await User.findOne({ 
+      email: { $regex: new RegExp(`^${email}$`, 'i') } 
+    });
+
     if (!user) {
       return res.status(400).json({ 
         success: false,
@@ -95,7 +97,7 @@ export const login = async (req, res) => {
       });
     }
 
-    // Verify password
+    // Remove password logging for security
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ 
@@ -117,7 +119,7 @@ export const login = async (req, res) => {
       token,
       role: user.role,
       userId: user._id,
-      message: "Login successful",
+      message: "Logged in successfully",
     });
 
   } catch (error) {
