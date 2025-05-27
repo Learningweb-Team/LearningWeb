@@ -34,7 +34,7 @@ const ResetPassword = () => {
     setMessage({ text: "", type: "" });
     
     try {
-      const res = await axios.post("http://localhost:5000/api/otp/reset-password", { 
+      const res = await axios.post("https://digital-schools-backend.onrender.com/api/otp/reset-password", { 
         email, 
         otp, 
         newPassword 
