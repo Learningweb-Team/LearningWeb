@@ -23,12 +23,12 @@ const UserDashboard = () => {
 
       try {
         // Fetch user data
-        const userResponse = await axios.get("http://localhost:5000/api/dashboard/user-dashboard", {
+        const userResponse = await axios.get("https://digital-schools-backend.onrender.com/api/dashboard/user-dashboard", {
           headers: { Authorization: `Bearer ${token}` },
         });
         
         // Fetch enrolled courses
-        const coursesResponse = await axios.get("http://localhost:5000/api/users/my-courses", {
+        const coursesResponse = await axios.get("https://digital-schools-backend.onrender.com/api/users/my-courses", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
