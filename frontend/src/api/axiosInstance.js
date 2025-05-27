@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api"; // Backend URL
+const API_BASE_URL = "https://digital-schools-backend.onrender.com/api"; // Backend URL
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
