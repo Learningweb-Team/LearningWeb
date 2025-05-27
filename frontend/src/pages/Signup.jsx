@@ -2,8 +2,11 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
-import bgImage from "/src/assets/bg_img/Bglogin1.jpg";
+
 import PhoneNumberInput from "../components/common/PhoneNumberInput";
+
+// Background Image
+const bgImage = new URL("/src/assets/bg_img/Bglogin1.jpg", import.meta.url).href;
 
 const Signup = () => {
   const [formData, setFormData] = useState({
