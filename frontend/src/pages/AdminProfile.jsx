@@ -18,7 +18,7 @@ const AdminProfile = () => {
 
     const fetchAdminData = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/dashboard/admin/profile", {
+        const response = await fetch("https://digital-schools-backend.onrender.com/api/dashboard/admin/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
