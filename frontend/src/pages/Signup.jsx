@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
-import bgImage from "/src/assets/bg_img/Bglogin1.jpg";
+import { Eye, EyeOff } from "lucide-react";
+import { Boxes } from "../components/Boxes";
 import PhoneNumberInput from "../components/common/PhoneNumberInput";
+import DigitalSchoolLoader from "../components/DigitalSchoolLoader";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -37,77 +38,72 @@ const Signup = () => {
     }));
   };
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+const handleSignup = async (e) => {
+  e.preventDefault();
+  setError("");
+  setSuccess("");
+  setIsLoading(true);
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
+  if (formData.password !== formData.confirmPassword) {
+    setError("Passwords do not match.");
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    const userData = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phoneNumber: formData.phoneNumber,
+      password: formData.password,
+    };
+
+    const res = await axios.post("http://localhost:5000/api/auth/signup", userData);
+
+    if (res.data.token) {
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", res.data.role);
+      setSuccess("Account created successfully! Redirecting...");
+      setTimeout(() => {
+        navigate(res.data.role === "admin" ? "/admin-dashboard" : "/user-dashboard", { replace: true });
+      }, 1500);
     }
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message ||
+      error.response?.data?.error?.message ||
+      "Signup failed. Please try again.";
+    setError(errorMessage);
+    setIsLoading(false);
+  }
+};
 
-    setIsLoading(true);
-
-    try {
-      const userData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        password: formData.password,
-      };
-
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/signup",
-        userData
-      );
-
-      if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("role", res.data.role);
-        setSuccess("Account created successfully! Redirecting...");
-
-        setTimeout(() => {
-          navigate(res.data.role === "admin" ? "/admin-dashboard" : "/user-dashboard");
-        }, 1500);
-      } else {
-        setError(res.data.message || "Signup failed. Try again.");
-      }
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error?.message ||
-        "Signup failed. Please try again.";
-      setError(errorMessage);
-      console.error("Signup Error:", error.response?.data || error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (isLoading) {
+    return <DigitalSchoolLoader />;
+  }
 
   return (
-    <div
-      className="flex items-center justify-center min-h-screen bg-cover bg-center relative px-4 py-8"
-      style={{ backgroundImage: `url(${bgImage})` }}
-    >
-      <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-900 px-4 py-8">
+      <Boxes className="absolute inset-0 opacity-20" />
 
-      <div className="bg-white bg-opacity-20 backdrop-blur-md p-8 rounded-lg shadow-lg w-full max-w-md relative z-10 border border-white border-opacity-30">
+      <div className="relative z-10 bg-gray-800/80 backdrop-blur-md p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-700">
         <h2 className="text-2xl font-bold text-center mb-6 text-white">Create Account</h2>
 
         {error && <p className="text-red-400 text-center mb-4">{error}</p>}
         {success && <p className="text-green-400 text-center mb-4">{success}</p>}
 
         <form onSubmit={handleSignup} className="space-y-4">
+          
           <div className="grid grid-cols-2 gap-4">
+            
             <div>
               <label className="block text-white text-sm mb-1">First Name*</label>
               <input
                 type="text"
                 name="firstName"
-                className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
-                placeholder="first name"
+                className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded"
+                placeholder="First name"
                 value={formData.firstName}
                 onChange={handleChange}
                 required
@@ -118,8 +114,8 @@ const Signup = () => {
               <input
                 type="text"
                 name="lastName"
-                className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
-                placeholder="last name"
+                className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded"
+                placeholder="Last name"
                 value={formData.lastName}
                 onChange={handleChange}
                 required
@@ -132,8 +128,8 @@ const Signup = () => {
             <input
               type="email"
               name="email"
-              className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
-              placeholder="@email.com"
+              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded"
+              placeholder="email@example.com"
               value={formData.email}
               onChange={handleChange}
               required
@@ -151,7 +147,7 @@ const Signup = () => {
             <input
               type={showPassword ? "text" : "password"}
               name="password"
-              className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
+              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded"
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
@@ -160,10 +156,10 @@ const Signup = () => {
             />
             <button
               type="button"
-              className="absolute right-3 top-9 text-white"
+              className="absolute right-3 top-9 text-gray-400 hover:text-white"
               onClick={() => setShowPassword(!showPassword)}
             >
-              {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
 
@@ -172,7 +168,7 @@ const Signup = () => {
             <input
               type={showConfirmPassword ? "text" : "password"}
               name="confirmPassword"
-              className="w-full p-2 border border-white border-opacity-30 bg-transparent text-white placeholder-gray-200 rounded"
+              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded"
               placeholder="••••••••"
               value={formData.confirmPassword}
               onChange={handleChange}
@@ -180,10 +176,10 @@ const Signup = () => {
             />
             <button
               type="button"
-              className="absolute right-3 top-9 text-white"
+              className="absolute right-3 top-9 text-gray-400 hover:text-white"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             >
-              {showConfirmPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
 
@@ -221,11 +217,11 @@ const Signup = () => {
             )}
           </button>
 
-          <div className="flex justify-center text-sm mt-4 text-white">
+          <div className="flex justify-center text-sm mt-4 text-gray-300">
             Already have an account?{" "}
             <Link
               to="/login"
-              className="text-blue-200 hover:text-blue-100 ml-1 font-medium"
+              className="text-blue-400 hover:text-blue-300 ml-1 font-medium"
             >
               Log in
             </Link>

@@ -37,6 +37,9 @@ const Admin = () => {
   const [activeModuleId, setActiveModuleId] = useState(1);
   const [videoPreview, setVideoPreview] = useState(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [mobileView, setMobileView] = useState(false);
+  
   const backgroundRef = useRef(null);
 
   // Interactive background effect
@@ -53,6 +56,16 @@ const Admin = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  useEffect(() => {
+  const handleResize = () => {
+    setMobileView(window.innerWidth < 768);
+  };
+  
+  handleResize(); // Initial check
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
 
   const uploadToCloudinary = async (file, resourceType = 'image', moduleId = null) => {
     if (!file) {
@@ -291,7 +304,7 @@ const handleVideoUpload = async (moduleId, classId, e) => {
         : module
     ));
   };
-  const handlePublish = async () => {
+const handlePublish = async () => {
   setUploading(true);
   setUploadError('');
   setSuccessMessage('');
@@ -303,9 +316,32 @@ const handleVideoUpload = async (moduleId, classId, e) => {
     
     if (coverPhoto.file && !coverPhoto.isUploaded) {
       const result = await uploadToCloudinary(coverPhoto.file, 'image');
+      if (!result) throw new Error('Failed to upload cover photo');
       coverPhotoUrl = result.url;
       coverPhotoPublicId = result.publicId;
     }
+
+    // Upload all pending videos
+    const updatedModules = await Promise.all(modules.map(async module => {
+      const updatedClasses = await Promise.all(module.classes.map(async cls => {
+        if (cls.videoFile) {
+          const result = await uploadToCloudinary(cls.videoFile, 'video');
+          if (!result) throw new Error(`Failed to upload video for ${cls.title}`);
+          return {
+            ...cls,
+            videoUrl: result.url,
+            publicId: result.publicId,
+            videoFile: undefined
+          };
+        }
+        return cls;
+      }));
+      
+      return {
+        ...module,
+        classes: updatedClasses
+      };
+    }));
 
     // Prepare course data
     const courseData = {
@@ -315,7 +351,7 @@ const handleVideoUpload = async (moduleId, classId, e) => {
         url: coverPhotoUrl,
         publicId: coverPhotoPublicId
       },
-      modules: modules.map(module => ({
+      modules: updatedModules.map(module => ({
         title: module.title,
         description: module.description,
         classes: module.classes.map(cls => ({
@@ -344,6 +380,7 @@ const handleVideoUpload = async (moduleId, classId, e) => {
     if (!response.ok) throw new Error(data.message || 'Failed to publish course');
 
     setSuccessMessage('Course published successfully!');
+    setShowSuccessModal(true);
     
   } catch (error) {
     console.error('Publishing error:', error);
@@ -352,8 +389,6 @@ const handleVideoUpload = async (moduleId, classId, e) => {
     setUploading(false);
   }
 };
-
-
 
 
 
@@ -416,25 +451,45 @@ const handleVideoUpload = async (moduleId, classId, e) => {
         />
       </div>
 
-      {/* Mobile sidebar toggle button */}
-      <button 
-        onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-black/80 rounded-full text-white"
-      >
-        {mobileSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+      {/* Mobile Navbar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gray-900 text-white p-2 shadow-md flex justify-between items-center h-14">
+        <div className="w-7 h-7 bg-gradient-to-br from-blue-600 to-blue-400 rounded-full flex items-center justify-center text-white font-bold shadow-md text-xs">
+          DM
+        </div>
+        <button 
+          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          className="p-1 text-white"
+        >
+          {mobileSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
 
-      <div className="flex min-h-screen">
-        {/* Sidebar */}
-        <AdminSidebar 
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-        />
+      <div className="flex flex-col md:flex-row min-h-screen pt-14 md:pt-0">
+        {/* Mobile Sidebar */}
+        {mobileSidebarOpen && (
+          <div className="md:hidden w-full bg-gray-900 text-white shadow-lg z-40 fixed top-14 bottom-0 overflow-y-auto">
+            <AdminSidebar 
+              isSidebarOpen={true}
+              setIsSidebarOpen={setIsSidebarOpen}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              mobileView={true}
+            />
+          </div>
+        )}
+
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <AdminSidebar 
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+        </div>
 
         {/* Main Content */}
-        <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
+        <div className={`flex-1 transition-all duration-300 ${isSidebarOpen && !mobileView ? 'md:ml-64' : 'md:ml-20'} ${mobileSidebarOpen ? 'mt-14' : ''}`}>
           <AdminMainContent
             courseTitle={courseTitle}
             setCourseTitle={setCourseTitle}
@@ -457,6 +512,9 @@ const handleVideoUpload = async (moduleId, classId, e) => {
             handlePublish={handlePublish}
             courseDescription={courseDescription}
             setCourseDescription={setCourseDescription}
+            showSuccessModal={showSuccessModal}
+            setShowSuccessModal={setShowSuccessModal}
+
           />
         </div>
       </div>

@@ -220,6 +220,15 @@ export const publishCourse = async (req, res) => {
     const { title, description, coverPhoto, modules } = req.body;
     console.log('Received publish request:', { title, coverPhoto, modules });
 
+    // In your publishCourse controller, add this validation:
+modules.forEach(module => {
+  module.classes.forEach(cls => {
+    if (cls.videoUrl && !cls.videoUrl.startsWith('https://res.cloudinary.com')) {
+      throw new Error(`Invalid video URL format for ${cls.title}`);
+    }
+  });
+});
+
     // Validate required fields
     if (!title?.trim()) {
       return res.status(400).json({

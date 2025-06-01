@@ -16,13 +16,16 @@ const AdminMainContent = ({
   coverPhoto,
   setCoverPhoto,
   removeCoverPhoto,
+  showSuccessModal,
+  setShowSuccessModal,
   uploading,
   uploadError,
   handlePublish,
   successMessage
+  
 }) => {
   const [videoPreview, setVideoPreview] = useState(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
   const [editingCourseTitle, setEditingCourseTitle] = useState(false);
   const [tempCourseTitle, setTempCourseTitle] = useState(courseTitle);
   const [editingCourseDescription, setEditingCourseDescription] = useState(false);
@@ -30,6 +33,9 @@ const AdminMainContent = ({
   
   const activeModule = modules.find(module => module.id === activeModuleId);
 
+
+
+  
   // Update course description
   const updateCourseDescription = () => {
     setCourseDescription(tempCourseDescription);
@@ -354,12 +360,12 @@ const AdminMainContent = ({
       {/* Course Header */}
       <div className="bg-white rounded-xl p-6 shadow border">
         {editingCourseTitle ? (
-          <div className="flex items-center mb-2">
+          <div className="flex items-center mb-1">
             <input
               type="text"
               value={tempCourseTitle}
               onChange={(e) => updateField('courseTitle', e.target.value)}
-              className="text-2xl font-bold text-gray-800 flex-1 border-b-2 border-blue-500 focus:outline-none"
+              className="text-lg sm:text-2xl font-bold text-gray-800 flex-1 border-b-2 border-blue-500 focus:outline-none"
               autoFocus
             />
             <button
@@ -370,8 +376,8 @@ const AdminMainContent = ({
             </button>
           </div>
         ) : (
-          <div className="flex items-center mb-2">
-            <h1 className="text-2xl font-bold text-gray-800">{courseTitle}</h1>
+          <div className="flex items-center mb-1">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-800">{courseTitle}</h1>
             <button
               onClick={() => toggleEdit('courseTitle')}
               className="ml-2 p-1 text-blue-500 hover:text-blue-700"
@@ -456,13 +462,13 @@ const AdminMainContent = ({
       </div>
 
       {/* Module Navigation */}
-      <div className="overflow-x-auto">
-        <div className="flex gap-2 pb-2">
+      <div className="overflow-x-auto pb-1">
+        <div className="flex gap-1 sm:gap-2 pb-1">
           {modules.map(module => (
             <button
               key={module.id}
               onClick={() => setActiveModuleId(module.id)}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${
+              className={`px-2 py-1 sm:px-4 sm:py-2 rounded-lg whitespace-nowrap text-xs sm:text-base transition ${
                 activeModuleId === module.id
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -630,28 +636,66 @@ const AdminMainContent = ({
                     )}
 
                     <div className="flex items-center gap-4 text-sm">
-                      {cls.videoUrl ? (
-                        <>
-                          <span className="flex items-center text-green-600"><Video size={16} className="mr-1" />Uploaded</span>
-                          <button onClick={() => handleViewVideo(cls.videoUrl)} className="text-blue-500 hover:text-blue-700 flex items-center">
-                            <Eye size={14} className="mr-1" />View
-                          </button>
-                          <button onClick={() => removeVideo(activeModule.id, cls.id)} className="text-red-500 hover:text-red-700 flex items-center">
-                            <Trash2 size={14} className="mr-1" />Remove
-                          </button>
-                        </>
-                      ) : (
-                        <label className="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center">
-                          <Upload size={14} className="mr-1" />
-                          Upload Video
-                          <input
-                            type="file"
-                            onChange={(e) => handleVideoUpload(activeModule.id, cls.id, e)}
-                            accept="video/*"
-                            className="hidden"
-                          />
-                        </label>
-                      )}
+
+{cls.videoFile ? (
+  <div className="mt-2">
+    <div className="flex items-center text-blue-500">
+      <Video size={16} className="mr-1" />
+      <span>Video ready for upload ({Math.round(cls.videoFile.size / 1024 / 1024)}MB)</span>
+    </div>
+    <button 
+      onClick={() => {
+        setModules(modules.map(m => 
+          m.id === activeModuleId ? {
+            ...m,
+            classes: m.classes.map(c => 
+              c.id === cls.id ? { ...c, videoFile: undefined } : c
+            )
+          } : m
+        ));
+      }}
+      className="text-sm text-red-500 hover:text-red-700 mt-1 flex items-center"
+    >
+      <X size={14} className="mr-1" /> Remove
+    </button>
+  </div>
+) : cls.videoUrl ? (
+  <>
+    <span className="flex items-center text-green-600"><Video size={16} className="mr-1" />Uploaded</span>
+    <button onClick={() => handleViewVideo(cls.videoUrl)} className="text-blue-500 hover:text-blue-700 flex items-center">
+      <Eye size={14} className="mr-1" />View
+    </button>
+    <button onClick={() => removeVideo(activeModule.id, cls.id)} className="text-red-500 hover:text-red-700 flex items-center">
+      <Trash2 size={14} className="mr-1" />Remove
+    </button>
+  </>
+) : (
+  <label className="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center">
+    <Upload size={14} className="mr-1" />
+    Upload Video
+    <input
+      type="file"
+      onChange={(e) => {
+        if (e.target.files && e.target.files[0]) {
+          setModules(modules.map(m => 
+            m.id === activeModuleId ? {
+              ...m,
+              classes: m.classes.map(c => 
+                c.id === cls.id ? { 
+                  ...c, 
+                  videoFile: e.target.files[0],
+                  previewUrl: URL.createObjectURL(e.target.files[0])
+                } : c
+              )
+            } : m
+          ));
+        }
+      }}
+      accept="video/*"
+      className="hidden"
+    />
+  </label>
+)}
                     </div>
                   </div>
                 ))}
