@@ -243,7 +243,7 @@ const handleVideoUpload = async (moduleId, classId, e) => {
         }))
       };
 
-      const response = await fetch('http://localhost:5000/api/admin/publish', {
+      const response = await fetch('https://digital-schools-backend.onrender.com/api/admin/publish', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -367,7 +367,7 @@ const handlePublish = async () => {
     };
 
     // Send to backend
-    const response = await fetch('http://localhost:5000/api/admin/publish', {
+    const response = await fetch('https://digital-schools-backend.onrender.com/api/admin/publish', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -19,8 +19,8 @@ const Profile = () => {
         // For admin, we'll use the admin profile endpoint
         const role = localStorage.getItem("role");
         const endpoint = role === "admin" 
-          ? "http://localhost:5000/api/dashboard/admin/profile" 
-          : "http://localhost:5000/api/profile";
+          ? "https://digital-schools-backend.onrender.com/api/dashboard/admin/profile" 
+          : "https://digital-schools-backend.onrender.com/api/profile";
         
         const response = await fetch(endpoint, {
           method: "GET",

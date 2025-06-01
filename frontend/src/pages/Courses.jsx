@@ -15,7 +15,7 @@ const Courses = () => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:5000/api/courses");
+        const response = await axios.get("https://digital-schools-backend.onrender.com/api/courses");
         
         // Handle different response structures
         const coursesData = response.data.data || response.data;

@@ -20,7 +20,7 @@ const ForgotPassword = () => {
     setMessage({ text: "", type: "" });
     
     try {
-      const res = await axios.post("http://localhost:5000/api/otp/send-otp", { email });
+      const res = await axios.post("https://digital-schools-backend.onrender.com/api/otp/send-otp", { email });
       setMessage({ text: res.data.message, type: "success" });
       setStep(2);
     } catch (error) {
@@ -39,7 +39,7 @@ const ForgotPassword = () => {
     setMessage({ text: "", type: "" });
     
     try {
-      const res = await axios.post("http://localhost:5000/api/otp/verify-otp", { email, otp });
+      const res = await axios.post("https://digital-schools-backend.onrender.com/api/otp/verify-otp", { email, otp });
       setMessage({ text: res.data.message, type: "success" });
       setStep(3);
     } catch (error) {
@@ -64,7 +64,7 @@ const ForgotPassword = () => {
     setMessage({ text: "", type: "" });
     
     try {
-      const res = await axios.post("http://localhost:5000/api/otp/reset-password", { 
+      const res = await axios.post("https://digital-schools-backend.onrender.com/api/otp/reset-password", { 
         email, 
         otp, 
         newPassword 

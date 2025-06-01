@@ -56,7 +56,7 @@ const CourseDetail = () => {
 
     try {
       const response = await axios.post(
-        `http://localhost:5000/api/users/enroll`,
+        `https://digital-schools-backend.onrender.com/api/users/enroll`,
         { courseId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -75,7 +75,7 @@ const CourseDetail = () => {
         setCurrentVideoIndex(0);
         
         await axios.put(
-          `http://localhost:5000/api/progress/${courseId}/watch`,
+          `https://digital-schools-backend.onrender.com/api/progress/${courseId}/watch`,
           { 
             videoId: firstVideo._id,
             timestamp: 0
@@ -105,7 +105,7 @@ const CourseDetail = () => {
 
     try {
       await axios.post(
-        `http://localhost:5000/api/progress/${courseId}/complete`,
+        `https://digital-schools-backend.onrender.com/api/progress/${courseId}/complete`,
         { videoId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -140,7 +140,7 @@ const CourseDetail = () => {
     if (token && !isAdmin) {
       try {
         await axios.put(
-          `http://localhost:5000/api/progress/${courseId}/watch`,
+          `https://digital-schools-backend.onrender.com/api/progress/${courseId}/watch`,
           { 
             videoId: nextVideo._id,
             timestamp: 0
@@ -173,7 +173,7 @@ const CourseDetail = () => {
 
     try {
       await axios.post(
-        `http://localhost:5000/api/progress/${courseId}/complete-module`,
+        `https://digital-schools-backend.onrender.com/api/progress/${courseId}/complete-module`,
         { moduleId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -194,7 +194,7 @@ const CourseDetail = () => {
         
         // Fetch course data
         const courseResponse = await axios.get(
-          `http://localhost:5000/api/courses/${courseId}`,
+          `https://digital-schools-backend.onrender.com/api/courses/${courseId}`,
           token ? { headers: { Authorization: `Bearer ${token}` } } : {}
         );
 
@@ -240,7 +240,7 @@ const courseData = apiData.data || apiData; // Handle both response formats
             
             try {
               const enrollStatus = await axios.get(
-                `http://localhost:5000/api/users/enrollment-status/${courseId}`,
+                `https://digital-schools-backend.onrender.com/api/users/enrollment-status/${courseId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               isEnrolled = enrollStatus.data?.isEnrolled || false;
@@ -248,7 +248,7 @@ const courseData = apiData.data || apiData; // Handle both response formats
             } catch (error) {
               if (error.response?.status === 404) {
                 const progressResponse = await axios.get(
-                  `http://localhost:5000/api/progress/${courseId}`,
+                  `https://digital-schools-backend.onrender.com/api/progress/${courseId}`,
                   { headers: { Authorization: `Bearer ${token}` } }
                 );
                 isEnrolled = !!progressResponse.data;

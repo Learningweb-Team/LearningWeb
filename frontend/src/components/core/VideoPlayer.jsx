@@ -20,7 +20,7 @@ const VideoPlayer = ({
     setIsTracking(true);
     try {
       await axios.put(
-        `http://localhost:5000/api/progress/${courseId}/watch`,
+        `https://digital-schools-backend.onrender.com/api/progress/${courseId}/watch`,
         { 
           videoId,
           timestamp: currentTime 
@@ -39,7 +39,7 @@ const VideoPlayer = ({
     
     try {
       await axios.post(
-        `http://localhost:5000/api/progress/${courseId}/complete`,
+        `https://digital-schools-backend.onrender.com/api/progress/${courseId}/complete`,
         { videoId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -56,7 +56,7 @@ const VideoPlayer = ({
     const checkCompletion = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/progress/${courseId}`,
+          `https://digital-schools-backend.onrender.com/api/progress/${courseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const progressData = response.data.data || response.data;

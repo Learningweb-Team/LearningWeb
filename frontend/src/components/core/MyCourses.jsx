@@ -17,7 +17,7 @@ const MyCourses = () => {
     const fetchEnrolledCourses = async () => {
       try {
         const response = await axios.get(
-          'http://localhost:5000/api/users/my-courses',
+          'https://digital-schools-backend.onrender.com/api/users/my-courses',
           { headers: { Authorization: `Bearer ${token}` } }
         );
         

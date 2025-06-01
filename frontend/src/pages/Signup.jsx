@@ -38,46 +38,51 @@ const Signup = () => {
     }));
   };
 
-const handleSignup = async (e) => {
-  e.preventDefault();
-  setError("");
-  setSuccess("");
-  setIsLoading(true);
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setIsLoading(true);
 
-  if (formData.password !== formData.confirmPassword) {
-    setError("Passwords do not match.");
-    setIsLoading(false);
-    return;
-  }
-
-  try {
-    const userData = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phoneNumber: formData.phoneNumber,
-      password: formData.password,
-    };
-
-    const res = await axios.post("http://localhost:5000/api/auth/signup", userData);
-
-    if (res.data.token) {
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
-      setSuccess("Account created successfully! Redirecting...");
-      setTimeout(() => {
-        navigate(res.data.role === "admin" ? "/admin-dashboard" : "/user-dashboard", { replace: true });
-      }, 1500);
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      setIsLoading(false);
+      return;
     }
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.data?.error?.message ||
-      "Signup failed. Please try again.";
-    setError(errorMessage);
-    setIsLoading(false);
-  }
-};
+
+    try {
+      const userData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        password: formData.password,
+      };
+
+      const res = await axios.post(
+        "https://digital-schools-backend.onrender.com/api/auth/signup",
+        userData
+      );
+
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("role", res.data.role);
+        setSuccess("Account created successfully! Redirecting...");
+
+        setTimeout(() => {
+          navigate(res.data.role === "admin" ? "/admin-dashboard" : "/user-dashboard", { replace: true });
+        }, 1500);
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error?.message ||
+        "Signup failed. Please try again.";
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <DigitalSchoolLoader />;
@@ -94,9 +99,7 @@ const handleSignup = async (e) => {
         {success && <p className="text-green-400 text-center mb-4">{success}</p>}
 
         <form onSubmit={handleSignup} className="space-y-4">
-          
           <div className="grid grid-cols-2 gap-4">
-            
             <div>
               <label className="block text-white text-sm mb-1">First Name*</label>
               <input

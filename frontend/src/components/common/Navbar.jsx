@@ -45,8 +45,8 @@ const Navbar = () => {
       const fetchUserData = async () => {
         try {
           const endpoint = role === "admin" 
-            ? "http://localhost:5000/api/dashboard/admin/profile"
-            : "http://localhost:5000/api/dashboard/user-dashboard";
+            ? "https://digital-schools-backend.onrender.com/api/dashboard/admin/profile"
+            : "https://digital-schools-backend.onrender.com/api/dashboard/user-dashboard";
           
           const response = await fetch(endpoint, {
             headers: { Authorization: `Bearer ${token}` },
